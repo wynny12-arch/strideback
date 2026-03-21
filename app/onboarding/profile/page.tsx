@@ -243,7 +243,7 @@ export default function ProfilePage() {
             <span className="text-base">🏃</span>
             <p className="text-xs text-sb-primary font-medium">Running is your primary sport — that&apos;s what StrideBack is built around.</p>
           </div>
-          <p className="text-xs text-[#555]/60 mb-3">Any other training? We&apos;ll use this to suggest safe alternatives during recovery.</p>
+          <p className="text-xs text-[#555]/60 mb-3">Any other training? This helps us factor in your overall load when building your plan.</p>
           <MultiOptionGrid options={OTHER_ACTIVITY_OPTIONS} values={otherActivities} onChange={setOtherActivities} />
         </Section>
 
