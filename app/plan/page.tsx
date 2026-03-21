@@ -5,11 +5,16 @@ import { useRouter } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
 import { CheckCircle2, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, StopCircle } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
-// TODO: Replace with live Claude API call POST /api/plan-generator
-import planData from '@/mocks/rehab-plan.json'
+import planMock from '@/mocks/rehab-plan.json'
 import type { RehabPlan } from '@/types'
 
-const plan = planData as RehabPlan
+function getStoredPlan(): RehabPlan {
+  try {
+    const stored = localStorage.getItem('sb_plan')
+    if (stored) return JSON.parse(stored) as RehabPlan
+  } catch { /* fall through */ }
+  return planMock as RehabPlan
+}
 
 const CONFIDENCE_COLORS = {
   high: { bg: 'bg-[#E8F5EE]', text: 'text-sb-success', label: 'High confidence' },
@@ -22,12 +27,14 @@ const DISCLAIMER = 'StrideBack provides structured guidance and educational supp
 export default function PlanPage() {
   const router = useRouter()
   useRequireOnboarding()
+  const [plan, setPlan] = useState<RehabPlan>(planMock as RehabPlan)
   const [runningExpanded, setRunningExpanded] = useState(false)
   const [rulesExpanded, setRulesExpanded] = useState(false)
   const [completedDays, setCompletedDays] = useState<number[]>([])
   const confidence = CONFIDENCE_COLORS[plan.aiConfidence]
 
   useEffect(() => {
+    setPlan(getStoredPlan())
     const stored = JSON.parse(localStorage.getItem('sb_completed_days') ?? '[]')
     setCompletedDays(stored)
   }, [])

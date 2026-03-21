@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   CheckCircle2,
@@ -155,24 +155,46 @@ function RedHardStop({
   )
 }
 
+function getSaved(): Record<string, unknown> {
+  try { return JSON.parse(localStorage.getItem('sb_onboarding') ?? '{}') } catch { return {} }
+}
+function getMedicalUpdates(): unknown[] {
+  try { return JSON.parse(localStorage.getItem('sb_medical_updates') ?? '[]') } catch { return [] }
+}
+
 export default function SafetyPage() {
-  // TODO: Replace devState with safety status loaded from localStorage
-  // (stored after onboarding Screen 5 completes the intake summariser + safety screener)
   const [devState, setDevState] = useState<SafetyStatus>('green')
+  const [generating, setGenerating] = useState(false)
   const router = useRouter()
 
   const safetyData = MOCK_BY_STATE[devState]
 
-  const handleContinue = () => {
-    // TODO: Store safety result in localStorage for plan generator to reference
+  const generateAndContinue = useCallback(async (dest: string) => {
     localStorage.setItem('sb_safety_review', JSON.stringify(safetyData))
-    router.push('/plan')
-  }
+    setGenerating(true)
+    try {
+      const onboarding = getSaved()
+      const medicalUpdates = getMedicalUpdates()
+      const res = await fetch('/api/generate-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...onboarding, medicalUpdates }),
+      })
+      if (res.ok) {
+        const plan = await res.json()
+        localStorage.setItem('sb_plan', JSON.stringify(plan))
+      }
+      // If API fails we fall through — plan page will use mock
+    } catch {
+      // silently fall back to mock
+    } finally {
+      setGenerating(false)
+      router.push(dest)
+    }
+  }, [safetyData, router])
 
-  const handleSaveAndReturn = () => {
-    localStorage.setItem('sb_safety_review', JSON.stringify(safetyData))
-    router.push('/')
-  }
+  const handleContinue = () => generateAndContinue('/plan')
+  const handleSaveAndReturn = () => generateAndContinue('/')
 
   if (safetyData.status === 'red') {
     return (
@@ -246,9 +268,15 @@ export default function SafetyPage() {
         <Button
           className="w-full h-11 text-base rounded-lg"
           onClick={handleContinue}
+          disabled={generating}
         >
-          Continue to my plan
+          {generating ? 'Building your plan…' : 'Continue to my plan'}
         </Button>
+        {generating && (
+          <p className="mt-3 text-xs text-center text-[#555]/60">
+            Claude is generating your personalised plan — this takes about 15 seconds.
+          </p>
+        )}
 
         <p
           className="mt-8 text-xs text-center leading-relaxed"
