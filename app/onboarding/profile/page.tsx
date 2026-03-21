@@ -169,6 +169,7 @@ export default function ProfilePage() {
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(null)
   const [weeklyTrainingLoad, setWeeklyTrainingLoad] = useState<TrainingLoad | null>(null)
   const [mainGoal, setMainGoal] = useState<MainGoal | null>(null)
+  const [trainingPlan, setTrainingPlan] = useState('')
 
   useEffect(() => {
     const saved = getSaved()
@@ -178,6 +179,7 @@ export default function ProfilePage() {
     if (saved.experienceLevel) setExperienceLevel(saved.experienceLevel as ExperienceLevel)
     if (saved.weeklyTrainingLoad) setWeeklyTrainingLoad(saved.weeklyTrainingLoad as TrainingLoad)
     if (saved.mainGoal) setMainGoal(saved.mainGoal as MainGoal)
+    if (saved.trainingPlan) setTrainingPlan(saved.trainingPlan as string)
   }, [])
 
   const canContinue = firstName.trim() && age && experienceLevel && weeklyTrainingLoad && mainGoal
@@ -192,6 +194,7 @@ export default function ProfilePage() {
       experienceLevel,
       weeklyTrainingLoad,
       mainGoal,
+      trainingPlan: trainingPlan.trim() || null,
     }))
     router.push('/onboarding/injury-area')
   }
@@ -257,6 +260,17 @@ export default function ProfilePage() {
 
         <Section title="Main goal">
           <OptionGrid options={GOAL_OPTIONS} value={mainGoal} onChange={setMainGoal} name="goal" />
+        </Section>
+
+        <Section title="Training plan (optional)">
+          <p className="text-xs text-[#555]/60 mb-3">Following a structured plan? Briefly describe it — e.g. "16-week marathon plan, currently week 8, running 40 miles/week."</p>
+          <textarea
+            value={trainingPlan}
+            onChange={(e) => setTrainingPlan(e.target.value)}
+            placeholder="Describe your training plan..."
+            rows={3}
+            className="w-full px-3 py-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid resize-none"
+          />
         </Section>
       </div>
 
