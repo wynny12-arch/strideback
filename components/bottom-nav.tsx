@@ -2,13 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ClipboardList, Dumbbell, TrendingUp, RotateCcw } from 'lucide-react'
+import { ClipboardList, Dumbbell, TrendingUp, RotateCcw, Settings2 } from 'lucide-react'
 
 const TABS = [
   { label: 'Plan', href: '/plan', icon: ClipboardList },
   { label: 'Today', href: '/session', icon: Dumbbell },
   { label: 'Progress', href: '/dashboard', icon: TrendingUp },
   { label: 'Review', href: '/review', icon: RotateCcw },
+  { label: 'Manage', href: '/manage', icon: Settings2 },
 ]
 
 export function BottomNav() {

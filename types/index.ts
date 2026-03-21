@@ -12,6 +12,15 @@ export type AIConfidence = "low" | "moderate" | "high";
 export type WeeklyDecision = "progress" | "hold" | "deload" | "seek_clinician";
 export type InjuryCaseStatus = "active" | "paused" | "closed";
 
+export type MedicalUpdateType = 'physio_visit' | 'new_symptom' | 'scan_result' | 'medication' | 'other'
+
+export interface MedicalUpdate {
+  id: string
+  date: string        // ISO string
+  type: MedicalUpdateType
+  text: string
+}
+
 export interface User {
   id: string;
   firstName: string;
