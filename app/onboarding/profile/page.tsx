@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { ActivityType, ExperienceLevel, TrainingLoad, MainGoal } from '@/types'
+import type { OtherActivity, ExperienceLevel, TrainingLoad, MainGoal } from '@/types'
 
 function ProgressBar({ step }: { step: number }) {
   return (
@@ -128,11 +128,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-const ACTIVITY_OPTIONS: OptionItem<ActivityType>[] = [
-  { value: 'running', label: 'Running' },
+const OTHER_ACTIVITY_OPTIONS: OptionItem<OtherActivity>[] = [
   { value: 'gym', label: 'Gym & Strength' },
   { value: 'cycling', label: 'Cycling' },
-  { value: 'other', label: 'Other sport' },
+  { value: 'swimming', label: 'Swimming' },
+  { value: 'team_sports', label: 'Team sports' },
+  { value: 'other', label: 'Other' },
 ]
 
 const EXPERIENCE_OPTIONS: OptionItem<ExperienceLevel>[] = [
@@ -164,7 +165,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const [firstName, setFirstName] = useState('')
   const [age, setAge] = useState('')
-  const [activityTypes, setActivityTypes] = useState<ActivityType[]>([])
+  const [otherActivities, setOtherActivities] = useState<OtherActivity[]>([])
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(null)
   const [weeklyTrainingLoad, setWeeklyTrainingLoad] = useState<TrainingLoad | null>(null)
   const [mainGoal, setMainGoal] = useState<MainGoal | null>(null)
@@ -173,23 +174,21 @@ export default function ProfilePage() {
     const saved = getSaved()
     if (saved.firstName) setFirstName(saved.firstName as string)
     if (saved.age) setAge(String(saved.age))
-    if (saved.activityType) {
-      const stored = saved.activityType
-      setActivityTypes(Array.isArray(stored) ? stored as ActivityType[] : [stored as ActivityType])
-    }
+    if (saved.otherActivities) setOtherActivities(saved.otherActivities as OtherActivity[])
     if (saved.experienceLevel) setExperienceLevel(saved.experienceLevel as ExperienceLevel)
     if (saved.weeklyTrainingLoad) setWeeklyTrainingLoad(saved.weeklyTrainingLoad as TrainingLoad)
     if (saved.mainGoal) setMainGoal(saved.mainGoal as MainGoal)
   }, [])
 
-  const canContinue = firstName.trim() && age && activityTypes.length > 0 && experienceLevel && weeklyTrainingLoad && mainGoal
+  const canContinue = firstName.trim() && age && experienceLevel && weeklyTrainingLoad && mainGoal
 
   const handleContinue = () => {
     localStorage.setItem('sb_onboarding', JSON.stringify({
       ...getSaved(),
       firstName: firstName.trim(),
       age: Number(age),
-      activityType: activityTypes,
+      activityType: ['running'],
+      otherActivities,
       experienceLevel,
       weeklyTrainingLoad,
       mainGoal,
@@ -239,8 +238,9 @@ export default function ProfilePage() {
           </div>
         </Section>
 
-        <Section title="Your activities (select all that apply)">
-          <MultiOptionGrid options={ACTIVITY_OPTIONS} values={activityTypes} onChange={setActivityTypes} />
+        <Section title="Other training you do (optional)">
+          <p className="text-xs text-[#555]/60 mb-3 -mt-1">Helps us suggest safe cross-training during recovery</p>
+          <MultiOptionGrid options={OTHER_ACTIVITY_OPTIONS} values={otherActivities} onChange={setOtherActivities} />
         </Section>
 
         <Section title="Running experience">

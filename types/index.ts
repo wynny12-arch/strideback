@@ -1,7 +1,8 @@
 // StrideBack TypeScript Interfaces
 // All data models matching the PRD Section 7 schema
 
-export type ActivityType = "running" | "gym" | "cycling" | "other";
+export type ActivityType = "running" | "gym" | "cycling" | "swimming" | "team_sports" | "other";
+export type OtherActivity = "gym" | "cycling" | "swimming" | "team_sports" | "other";
 export type ExperienceLevel = "beginner" | "intermediate" | "regular" | "competitive";
 export type TrainingLoad = "none" | "light" | "moderate" | "high";
 export type MainGoal = "return_to_running" | "reduce_pain" | "build_strength" | "stay_active";
@@ -16,6 +17,7 @@ export interface User {
   firstName: string;
   age: number;
   activityType: ActivityType[];
+  otherActivities?: OtherActivity[];
   experienceLevel: ExperienceLevel;
   weeklyTrainingLoad: TrainingLoad;
   mainGoal: MainGoal;
