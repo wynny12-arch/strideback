@@ -1,17 +1,23 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
 import { ChevronDown, ChevronUp, MessageSquare, AlertTriangle } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
 // TODO: Replace with live Claude API calls
-import planData from '@/mocks/rehab-plan.json'
+import planMock from '@/mocks/rehab-plan.json'
 import coachData from '@/mocks/coach-explainer.json'
 import type { RehabPlan } from '@/types'
 
-const plan = planData as RehabPlan
+function getStoredPlan(): RehabPlan {
+  try {
+    const stored = localStorage.getItem('sb_plan')
+    if (stored) return JSON.parse(stored) as RehabPlan
+  } catch { /* fall through */ }
+  return planMock as RehabPlan
+}
 
 function ExerciseCard({ exercise, expanded, onToggle }: { exercise: RehabPlan['strengthSessions'][0]['exercises'][0]; expanded: boolean; onToggle: () => void }) {
   return (
@@ -80,6 +86,8 @@ function SessionContent() {
   useRequireOnboarding()
   const searchParams = useSearchParams()
   const dayIndex = Number(searchParams.get('day') ?? 0)
+  const [plan, setPlan] = useState<RehabPlan>(planMock as RehabPlan)
+  useEffect(() => { setPlan(getStoredPlan()) }, [])
   const session = plan.strengthSessions[dayIndex] ?? plan.strengthSessions[0]
   const totalSessions = plan.strengthSessions.length
   const [showRunning, setShowRunning] = useState(false)

@@ -9,11 +9,19 @@ import {
 import { Flame, TrendingUp, Calendar, Target } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
 import { useRouter } from 'next/navigation'
-import planData from '@/mocks/rehab-plan.json'
+import planMock from '@/mocks/rehab-plan.json'
 import dashMock from '@/mocks/dashboard.json'
 import type { RehabPlan } from '@/types'
 
-const plan = planData as RehabPlan
+function getStoredPlan(): RehabPlan {
+  try {
+    const stored = localStorage.getItem('sb_plan')
+    if (stored) return JSON.parse(stored) as RehabPlan
+  } catch { /* fall through */ }
+  return planMock as RehabPlan
+}
+
+const plan = getStoredPlan()
 const TOTAL_SESSIONS = plan.strengthSessions.length
 
 const PAIN_COLOR = '#2E6DA4'
