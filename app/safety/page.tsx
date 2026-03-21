@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   CheckCircle2,
@@ -166,28 +166,33 @@ export default function SafetyPage() {
   const [devState, setDevState] = useState<SafetyStatus>('green')
   const [generating, setGenerating] = useState(false)
   const router = useRouter()
+  const planPromiseRef = useRef<Promise<void> | null>(null)
 
   const safetyData = MOCK_BY_STATE[devState]
 
-  const generateAndContinue = useCallback(async (dest: string) => {
-    localStorage.setItem('sb_safety_review', JSON.stringify(safetyData))
+  // Start generating the plan immediately when the page loads
+  useEffect(() => {
     localStorage.removeItem('sb_completed_days')
-    setGenerating(true)
-    try {
-      const onboarding = getSaved()
-      const medicalUpdates = getMedicalUpdates()
-      const res = await fetch('/api/generate-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...onboarding, medicalUpdates }),
-      })
+    const onboarding = getSaved()
+    const medicalUpdates = getMedicalUpdates()
+    planPromiseRef.current = fetch('/api/generate-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...onboarding, medicalUpdates }),
+    }).then(async (res) => {
       if (res.ok) {
         const plan = await res.json()
         localStorage.setItem('sb_plan', JSON.stringify(plan))
       }
-      // If API fails we fall through — plan page will use mock
-    } catch {
-      // silently fall back to mock
+    }).catch(() => { /* silently fall back to mock */ })
+  }, [])
+
+  const generateAndContinue = useCallback(async (dest: string) => {
+    localStorage.setItem('sb_safety_review', JSON.stringify(safetyData))
+    setGenerating(true)
+    try {
+      // If plan is already generated, this resolves instantly
+      await planPromiseRef.current
     } finally {
       setGenerating(false)
       router.push(dest)
