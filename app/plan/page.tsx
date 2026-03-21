@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
-import { CheckCircle2, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, StopCircle } from 'lucide-react'
+import { CheckCircle2, XCircle, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, StopCircle } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
 import planMock from '@/mocks/rehab-plan.json'
 import type { RehabPlan } from '@/types'
@@ -59,28 +59,37 @@ export default function PlanPage() {
         <div className="py-6 border-b border-gray-100">
           <div className={`rounded-xl p-4 ${plan.runningAllowance.allowed ? 'bg-[#E8F5EE]' : 'bg-[#FEF3CD]'}`}>
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="w-5 h-5 text-sb-success shrink-0" />
-              <p className="font-semibold text-sm text-sb-primary">Running: allowed this week</p>
+              {plan.runningAllowance.allowed
+                ? <CheckCircle2 className="w-5 h-5 text-sb-success shrink-0" />
+                : <XCircle className="w-5 h-5 text-sb-caution shrink-0" />
+              }
+              <p className="font-semibold text-sm text-sb-primary">
+                {plan.runningAllowance.allowed ? 'Running: allowed this week' : 'Running: not recommended this week'}
+              </p>
             </div>
             <p className="text-sm text-[#555] leading-relaxed mb-3">{plan.runningAllowance.guidance}</p>
-            <button
-              type="button"
-              onClick={() => setRunningExpanded(v => !v)}
-              onTouchEnd={(e) => { e.preventDefault(); setRunningExpanded(v => !v) }}
-              className="flex items-center gap-1 text-xs font-semibold text-sb-primary-mid"
-            >
-              {runningExpanded ? 'Hide protocol' : 'View run protocol'}
-              {runningExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            </button>
-            {runningExpanded && (
-              <ul className="mt-3 space-y-2">
-                {plan.runningAllowance.protocol.map((step, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-[#555]">
-                    <span className="text-sb-primary-mid font-bold shrink-0">{i + 1}.</span>
-                    <span>{step}</span>
-                  </li>
-                ))}
-              </ul>
+            {plan.runningAllowance.allowed && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setRunningExpanded(v => !v)}
+                  onTouchEnd={(e) => { e.preventDefault(); setRunningExpanded(v => !v) }}
+                  className="flex items-center gap-1 text-xs font-semibold text-sb-primary-mid"
+                >
+                  {runningExpanded ? 'Hide protocol' : 'View run protocol'}
+                  {runningExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                </button>
+                {runningExpanded && (
+                  <ul className="mt-3 space-y-2">
+                    {plan.runningAllowance.protocol.map((step, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-[#555]">
+                        <span className="text-sb-primary-mid font-bold shrink-0">{i + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
             )}
           </div>
         </div>
