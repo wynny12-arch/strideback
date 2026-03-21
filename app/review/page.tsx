@@ -1,169 +1,247 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
-import { CheckCircle2, AlertTriangle, ArrowRight, Brain } from 'lucide-react'
+import { CheckCircle2, Circle, AlertTriangle, RotateCcw } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts'
 import { Button } from '@/components/ui/button'
 import { BottomNav } from '@/components/bottom-nav'
-import type { WeeklyReview } from '@/types'
-// TODO: Replace with live Claude API call POST /api/weekly-review
-import progressData from '@/mocks/weekly-review-progress.json'
-import holdData from '@/mocks/weekly-review-hold.json'
 
-type ReviewDecision = 'progress' | 'hold'
-
-const MOCK_BY_STATE: Record<ReviewDecision, WeeklyReview> = {
-  progress: progressData as WeeklyReview,
-  hold: holdData as WeeklyReview,
+interface CheckIn {
+  painBefore: number
+  painDuring: number
+  painAfter: number
+  nextDayStiffness: number
+  confidenceScore: number
+  freeTextNotes: string | null
+  running?: { didRun: boolean | null; sessions: string | null; painDuringRun: number | null } | null
+  createdAt: string
 }
 
-const DECISION_CONFIG = {
-  progress: {
-    label: 'Progress to next phase',
-    bg: 'bg-sb-success',
-    lightBg: 'bg-[#E8F5EE]',
-    text: 'text-sb-success',
-    border: 'border-[#A8D5BC]',
-  },
-  hold: {
-    label: 'Hold at current phase',
-    bg: 'bg-sb-caution',
-    lightBg: 'bg-[#FEF3CD]',
-    text: 'text-[#B07D00]',
-    border: 'border-[#F5D98B]',
-  },
+const CONFIDENCE_LABELS: Record<number, { label: string; color: string }> = {
+  1: { label: 'Struggled', color: '#C0392B' },
+  2: { label: 'Managed', color: '#F5A623' },
+  3: { label: 'Felt good', color: '#1F7A4D' },
+  4: { label: 'Easy', color: '#1F7A4D' },
 }
 
-const CONFIDENCE_COLORS: Record<string, string> = {
-  high: 'text-sb-success',
-  moderate: 'text-[#B07D00]',
-  low: 'text-[#B07D00]',
+const PAIN_COLOR = '#2E6DA4'
+
+function avg(nums: number[]) {
+  if (!nums.length) return 0
+  return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10
 }
 
-// DEV ONLY
-function DevToggle({ current, onChange }: { current: ReviewDecision; onChange: (s: ReviewDecision) => void }) {
-  if (process.env.NODE_ENV !== 'development') return null
+function PainBadge({ value }: { value: number }) {
+  const color = value <= 3 ? '#1F7A4D' : value <= 6 ? '#B07D00' : '#C0392B'
   return (
-    <div className="fixed top-3 right-3 z-50 flex gap-1 rounded-lg p-1 text-xs font-mono bg-black/40">
-      {(['progress', 'hold'] as ReviewDecision[]).map((s) => (
-        <button
-          key={s}
-          type="button"
-          onClick={() => onChange(s)}
-          onTouchEnd={(e) => { e.preventDefault(); onChange(s) }}
-          style={{
-            backgroundColor: current === s ? (s === 'progress' ? '#1F7A4D' : '#F5A623') : undefined,
-            color: current === s ? '#fff' : (s === 'progress' ? '#1F7A4D' : '#F5A623'),
-          }}
-          className={`px-2 py-1 rounded font-bold border border-current ${current === s ? '' : 'opacity-60'}`}
-        >
-          {s}
-        </button>
-      ))}
-    </div>
+    <span className="text-xl font-bold" style={{ color }}>
+      {value}<span className="text-sm font-normal text-[#555]/50">/10</span>
+    </span>
   )
 }
 
 export default function ReviewPage() {
   useRequireOnboarding()
   const router = useRouter()
-  const [devState, setDevState] = useState<ReviewDecision>('progress')
-  const review = MOCK_BY_STATE[devState]
-  const config = DECISION_CONFIG[devState]
-  const isProgress = devState === 'progress'
+  const [checkIns, setCheckIns] = useState<CheckIn[]>([])
+  const [completedDays, setCompletedDays] = useState<number[]>([])
+  const [totalSessions, setTotalSessions] = useState(3)
+
+  useEffect(() => {
+    try {
+      const history: CheckIn[] = JSON.parse(localStorage.getItem('sb_checkin_history') ?? '[]')
+      // take only the most recent 3 (this week's sessions)
+      setCheckIns(history.slice(-3))
+      const completed: number[] = JSON.parse(localStorage.getItem('sb_completed_days') ?? '[]')
+      setCompletedDays(completed)
+      const plan = JSON.parse(localStorage.getItem('sb_plan') ?? '{}')
+      if (plan.strengthSessions?.length) setTotalSessions(plan.strengthSessions.length)
+    } catch { /* fall through */ }
+  }, [])
+
+  const sessionsCompleted = completedDays.length
+  const hasData = checkIns.length > 0
+
+  const avgPainBefore = avg(checkIns.map(c => c.painBefore))
+  const avgPainDuring = avg(checkIns.map(c => c.painDuring))
+  const avgPainAfter = avg(checkIns.map(c => c.painAfter))
+  const avgStiffness = avg(checkIns.map(c => c.nextDayStiffness))
+  const avgConfidence = avg(checkIns.map(c => c.confidenceScore))
+
+  const chartData = checkIns.map((c, i) => ({
+    name: `Session ${i + 1}`,
+    before: c.painBefore,
+    during: c.painDuring,
+    after: c.painAfter,
+  }))
+
+  const notes = checkIns.filter(c => c.freeTextNotes).map(c => c.freeTextNotes as string)
+
+  const handleStartNextWeek = () => {
+    localStorage.removeItem('sb_completed_days')
+    router.replace('/plan')
+  }
 
   return (
     <div className="min-h-screen bg-white pb-32">
-      <DevToggle current={devState} onChange={setDevState} />
-
       {/* Header */}
       <div className="bg-sb-primary px-6 pt-12 pb-8">
         <div className="w-full max-w-[480px] mx-auto">
-          <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-3">Weekly review</p>
-          <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-white ${config.bg}`}>
-            {isProgress
-              ? <CheckCircle2 className="w-4 h-4" />
-              : <AlertTriangle className="w-4 h-4" />
-            }
-            {config.label}
-          </span>
+          <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-2">Weekly review</p>
+          <h1 className="text-xl font-bold text-white leading-snug">
+            {sessionsCompleted} of {totalSessions} sessions completed
+          </h1>
         </div>
       </div>
 
       <div className="w-full max-w-[480px] mx-auto px-6 pt-6">
 
-        {/* Summary */}
-        <div className={`rounded-xl p-4 mb-6 ${config.lightBg} border ${config.border}`}>
-          <div className="flex items-start gap-2 mb-2">
-            <Brain className={`w-4 h-4 shrink-0 mt-0.5 ${config.text}`} />
-            <p className={`text-xs font-semibold uppercase tracking-wide ${config.text}`}>
-              AI summary · <span className={CONFIDENCE_COLORS[review.confidence] ?? ''}>
-                {review.confidence} confidence
-              </span>
-            </p>
-          </div>
-          <p className="text-sm text-[#333] leading-relaxed">{review.summary}</p>
-        </div>
-
-        {/* What improved */}
+        {/* Session completion */}
         <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">What improved</p>
-          <ul className="space-y-2">
-            {review.whatImproved.map((item, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm text-[#555] leading-snug">
-                <CheckCircle2 className="w-4 h-4 text-sb-success shrink-0 mt-0.5" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Sessions this week</p>
+          <div className="flex gap-3">
+            {Array.from({ length: totalSessions }).map((_, i) => {
+              const done = completedDays.includes(i)
+              return (
+                <div key={i} className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border ${done ? 'border-sb-success bg-[#E8F5EE]' : 'border-gray-200 bg-gray-50'}`}>
+                  {done
+                    ? <CheckCircle2 className="w-6 h-6 text-sb-success" />
+                    : <Circle className="w-6 h-6 text-gray-300" />
+                  }
+                  <span className={`text-xs font-semibold ${done ? 'text-sb-success' : 'text-[#555]/40'}`}>
+                    Day {i * 2 + 1}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
-        {/* What needs attention */}
-        {review.whatNeedsAttention.length > 0 && (
-          <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Needs attention</p>
-            <ul className="space-y-2">
-              {review.whatNeedsAttention.map((item, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-sm text-[#555] leading-snug">
-                  <AlertTriangle className="w-4 h-4 text-sb-caution shrink-0 mt-0.5" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+        {hasData ? (
+          <>
+            {/* Pain summary */}
+            <div className="mb-6">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Average pain this week</p>
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  { label: 'Before', value: avgPainBefore },
+                  { label: 'During', value: avgPainDuring },
+                  { label: 'After', value: avgPainAfter },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-gray-50 rounded-xl px-3 py-4 flex flex-col items-center gap-1">
+                    <span className="text-xs text-[#555]/50 font-medium">{label}</span>
+                    <PainBadge value={value} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Pain chart */}
+            {chartData.length > 1 && (
+              <div className="mb-6">
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Pain by session</p>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <ResponsiveContainer width="100%" height={140}>
+                    <BarChart data={chartData} barGap={2} barCategoryGap="30%">
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#888' }} axisLine={false} tickLine={false} />
+                      <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#888' }} axisLine={false} tickLine={false} width={20} />
+                      <Bar dataKey="before" name="Before" radius={[3, 3, 0, 0]}>
+                        {chartData.map((_, i) => <Cell key={i} fill={`${PAIN_COLOR}55`} />)}
+                      </Bar>
+                      <Bar dataKey="during" name="During" radius={[3, 3, 0, 0]}>
+                        {chartData.map((_, i) => <Cell key={i} fill={PAIN_COLOR} />)}
+                      </Bar>
+                      <Bar dataKey="after" name="After" radius={[3, 3, 0, 0]}>
+                        {chartData.map((_, i) => <Cell key={i} fill={`${PAIN_COLOR}99`} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <div className="flex justify-center gap-4 mt-1">
+                    {[{ label: 'Before', op: '55' }, { label: 'During', op: '' }, { label: 'After', op: '99' }].map(({ label, op }) => (
+                      <div key={label} className="flex items-center gap-1.5">
+                        <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: `${PAIN_COLOR}${op}` }} />
+                        <span className="text-xs text-[#555]/60">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Confidence per session */}
+            <div className="mb-6">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">How sessions felt</p>
+              <div className="space-y-2">
+                {checkIns.map((c, i) => {
+                  const conf = CONFIDENCE_LABELS[c.confidenceScore] ?? { label: '—', color: '#999' }
+                  return (
+                    <div key={i} className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+                      <span className="text-sm text-[#333] font-medium">Session {i + 1}</span>
+                      <span className="text-sm font-semibold" style={{ color: conf.color }}>{conf.label}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Stiffness */}
+            <div className="mb-6">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Avg next-morning stiffness</p>
+              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl">
+                {avgStiffness > 5
+                  ? <AlertTriangle className="w-5 h-5 text-sb-caution shrink-0" />
+                  : <CheckCircle2 className="w-5 h-5 text-sb-success shrink-0" />
+                }
+                <div>
+                  <PainBadge value={avgStiffness} />
+                  <p className="text-xs text-[#555]/60 mt-0.5">
+                    {avgStiffness > 5 ? 'Above threshold — consider reducing load next week' : 'Within acceptable range'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes */}
+            {notes.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Your notes</p>
+                <div className="space-y-2">
+                  {notes.map((note, i) => (
+                    <div key={i} className="px-4 py-3 bg-gray-50 rounded-xl">
+                      <p className="text-sm text-[#555] leading-snug">{note}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="mb-6 px-4 py-6 bg-gray-50 rounded-xl text-center">
+            <p className="text-sm text-[#555]/60 leading-relaxed">No check-in data yet. Complete a session and check in to see your weekly summary here.</p>
           </div>
         )}
 
-        {/* Next week changes */}
-        <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Next week</p>
-          <ul className="space-y-2">
-            {review.nextWeekChanges.map((item, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-sm text-[#555] leading-snug">
-                <ArrowRight className="w-4 h-4 text-sb-primary-mid shrink-0 mt-0.5" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Reasoning */}
-        <div className="mb-6 p-4 rounded-xl bg-gray-50 border border-gray-100">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-2">Reasoning</p>
-          <p className="text-sm text-[#555] leading-relaxed">{review.reasoning}</p>
+        {/* Placeholder for AI progression summary — v2 */}
+        <div className="mb-6 p-4 rounded-xl border border-dashed border-gray-200">
+          <div className="flex items-center gap-2 mb-2">
+            <RotateCcw className="w-4 h-4 text-[#555]/40" />
+            <p className="text-xs font-semibold text-[#555]/40 uppercase tracking-wide">AI progression analysis — coming soon</p>
+          </div>
+          <p className="text-sm text-[#555]/50 leading-snug">Personalised progression recommendations based on your week's data will appear here in the next update.</p>
         </div>
 
       </div>
 
-      {/* Fixed CTA — sits above bottom nav */}
+      {/* Fixed CTA */}
       <div className="fixed bottom-16 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-100 px-6 py-4">
         <div className="w-full max-w-[480px] mx-auto">
           <Button
             className="w-full h-12 text-base rounded-xl"
-            onClick={() => { localStorage.removeItem('sb_completed_days'); router.push('/plan') }}
-            onTouchEnd={(e: React.TouchEvent) => { e.preventDefault(); localStorage.removeItem('sb_completed_days'); router.push('/plan') }}
+            onClick={handleStartNextWeek}
           >
-            Got it — continue my plan
+            Start next week
           </Button>
         </div>
       </div>
