@@ -71,6 +71,54 @@ function OptionGrid<T extends string>({
   )
 }
 
+function MultiOptionGrid<T extends string>({
+  options,
+  values,
+  onChange,
+}: {
+  options: OptionItem<T>[]
+  values: T[]
+  onChange: (v: T[]) => void
+}) {
+  const toggle = (val: T) => {
+    const next = values.includes(val) ? values.filter(v => v !== val) : [...values, val]
+    onChange(next)
+  }
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {options.map((opt) => {
+        const selected = values.includes(opt.value)
+        return (
+          <div
+            key={opt.value}
+            className={`flex items-center justify-between px-3 py-3 rounded-xl border ${
+              selected ? 'border-sb-primary-mid bg-sb-primary-mid' : 'border-gray-200 bg-white'
+            }`}
+          >
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-medium leading-snug ${selected ? 'text-white' : 'text-[#333]'}`}>
+                {opt.label}
+              </p>
+            </div>
+            <button
+              type="button"
+              style={{ touchAction: 'manipulation' }}
+              onClick={() => { (document.activeElement as HTMLElement)?.blur(); toggle(opt.value) }}
+              className={`p-1.5 -mr-1 shrink-0 ${selected ? 'text-white' : 'text-[#555]/40'}`}
+              aria-label={`Toggle ${opt.label}`}
+            >
+              {selected
+                ? <CheckCircle2 className="w-4 h-4" />
+                : <ChevronRight className="w-4 h-4" />
+              }
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-7">
@@ -116,7 +164,7 @@ export default function ProfilePage() {
   const router = useRouter()
   const [firstName, setFirstName] = useState('')
   const [age, setAge] = useState('')
-  const [activityType, setActivityType] = useState<ActivityType | null>(null)
+  const [activityTypes, setActivityTypes] = useState<ActivityType[]>([])
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(null)
   const [weeklyTrainingLoad, setWeeklyTrainingLoad] = useState<TrainingLoad | null>(null)
   const [mainGoal, setMainGoal] = useState<MainGoal | null>(null)
@@ -125,20 +173,23 @@ export default function ProfilePage() {
     const saved = getSaved()
     if (saved.firstName) setFirstName(saved.firstName as string)
     if (saved.age) setAge(String(saved.age))
-    if (saved.activityType) setActivityType(saved.activityType as ActivityType)
+    if (saved.activityType) {
+      const stored = saved.activityType
+      setActivityTypes(Array.isArray(stored) ? stored as ActivityType[] : [stored as ActivityType])
+    }
     if (saved.experienceLevel) setExperienceLevel(saved.experienceLevel as ExperienceLevel)
     if (saved.weeklyTrainingLoad) setWeeklyTrainingLoad(saved.weeklyTrainingLoad as TrainingLoad)
     if (saved.mainGoal) setMainGoal(saved.mainGoal as MainGoal)
   }, [])
 
-  const canContinue = firstName.trim() && age && activityType && experienceLevel && weeklyTrainingLoad && mainGoal
+  const canContinue = firstName.trim() && age && activityTypes.length > 0 && experienceLevel && weeklyTrainingLoad && mainGoal
 
   const handleContinue = () => {
     localStorage.setItem('sb_onboarding', JSON.stringify({
       ...getSaved(),
       firstName: firstName.trim(),
       age: Number(age),
-      activityType,
+      activityType: activityTypes,
       experienceLevel,
       weeklyTrainingLoad,
       mainGoal,
@@ -188,8 +239,8 @@ export default function ProfilePage() {
           </div>
         </Section>
 
-        <Section title="Primary activity">
-          <OptionGrid options={ACTIVITY_OPTIONS} value={activityType} onChange={setActivityType} name="activity" />
+        <Section title="Your activities (select all that apply)">
+          <MultiOptionGrid options={ACTIVITY_OPTIONS} values={activityTypes} onChange={setActivityTypes} />
         </Section>
 
         <Section title="Running experience">

@@ -15,7 +15,7 @@ export interface User {
   id: string;
   firstName: string;
   age: number;
-  activityType: ActivityType;
+  activityType: ActivityType[];
   experienceLevel: ExperienceLevel;
   weeklyTrainingLoad: TrainingLoad;
   mainGoal: MainGoal;
