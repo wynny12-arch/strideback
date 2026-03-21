@@ -45,10 +45,7 @@ export default function PlanPage() {
       <div className="bg-sb-primary px-6 pt-12 pb-8">
         <div className="w-full max-w-[480px] mx-auto">
           <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-2">Your rehab plan</p>
-          <h1 className="text-xl font-bold text-white leading-snug mb-3">{plan.phase}</h1>
-          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${confidence.bg} ${confidence.text}`}>
-            {confidence.label}
-          </span>
+          <h1 className="text-xl font-bold text-white leading-snug">{plan.phase}</h1>
         </div>
       </div>
 
