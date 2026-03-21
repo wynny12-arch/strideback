@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 
+export const maxDuration = 60 // seconds — requires Vercel Hobby allows up to 60s
+
 const SYSTEM_PROMPT = `You are an expert musculoskeletal physiotherapist specialising in running injury rehabilitation.
 You generate personalised, evidence-based weekly rehab plans for injured runners.
 
@@ -126,8 +128,8 @@ export async function POST(req: Request) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 3000,
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: buildPrompt(body) }],
       }),
@@ -151,6 +153,7 @@ export async function POST(req: Request) {
     return NextResponse.json(plan)
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error'
+    console.error('[generate-plan] error:', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
