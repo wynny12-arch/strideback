@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import { ClipboardList, Dumbbell, TrendingUp, RotateCcw, Settings2 } from 'lucide-react'
 
 const TABS = [
@@ -12,8 +13,25 @@ const TABS = [
   { label: 'Manage', href: '/manage', icon: Settings2 },
 ]
 
+function getNextSessionDay(): number {
+  try {
+    const plan = JSON.parse(localStorage.getItem('sb_plan') ?? '{}')
+    const completed: number[] = JSON.parse(localStorage.getItem('sb_completed_days') ?? '[]')
+    const total = plan.strengthSessions?.length ?? 3
+    for (let i = 0; i < total; i++) {
+      if (!completed.includes(i)) return i
+    }
+  } catch { /* fall through */ }
+  return 0
+}
+
 export function BottomNav() {
   const pathname = usePathname()
+  const [todayDay, setTodayDay] = useState(0)
+
+  useEffect(() => {
+    setTodayDay(getNextSessionDay())
+  }, [pathname])
 
   return (
     <div
@@ -26,7 +44,7 @@ export function BottomNav() {
           return (
             <Link
               key={label}
-              href={href === '/session' ? '/session?day=0' : href}
+              href={href === '/session' ? `/session?day=${todayDay}` : href}
               className={`flex-1 flex flex-col items-center py-3 gap-1 ${
                 active ? 'text-sb-primary' : 'text-[#999]'
               }`}
