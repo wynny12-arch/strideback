@@ -80,7 +80,7 @@ Return a JSON object with EXACTLY this structure (all fields required):
     {
       "day": "Day 1",
       "focus": "Short description of this session's focus",
-      "warmUp": ["warm-up step 1", "warm-up step 2", "warm-up step 3", "warm-up step 4"],
+      "warmUp": ["warm-up step 1", "warm-up step 2", "warm-up step 3"],
       "exercises": [
         {
           "name": "Exercise name",
@@ -89,7 +89,7 @@ Return a JSON object with EXACTLY this structure (all fields required):
           "tempo": "e.g. 2 seconds up, 1 second hold, 2 seconds down",
           "painRule": "Specific pain threshold instruction for this exercise",
           "reason": "1 sentence explaining why this exercise is included",
-          "instructions": ["step 1", "step 2", "step 3", "step 4", "step 5"]
+          "instructions": ["step 1", "step 2", "step 3", "step 4"]
         }
       ]
     },
@@ -130,7 +130,7 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4096,
+        max_tokens: 8192,
         system: SYSTEM_PROMPT,
         messages: [{ role: 'user', content: buildPrompt(body) }],
       }),
