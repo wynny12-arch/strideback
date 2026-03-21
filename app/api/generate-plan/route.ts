@@ -11,6 +11,7 @@ Your plans must be:
 - Progressive but cautious — start conservatively, especially for higher pain scores
 - Written in plain English the user can follow at home without equipment
 - Specific about sets, reps, tempo, and pain thresholds
+- EVERY exercise in EVERY session must directly target or rehabilitate the injured area stated. Do not include exercises for unrelated body regions.
 
 Pain rules:
 - Pain ≤ 3/10 during exercise = acceptable
@@ -50,7 +51,7 @@ PATIENT PROFILE:
 - Main goal: ${mainGoal}
 - Other training: ${Array.isArray(otherActivities) && otherActivities.length > 0 ? otherActivities.join(', ') : 'None'}
 
-INJURY DETAILS:
+INJURY DETAILS (all exercises must target this region specifically):
 - Injured area: ${region}
 - Onset: ${onsetDate}
 - ${diagnosisText}

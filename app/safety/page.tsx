@@ -183,6 +183,7 @@ export default function SafetyPage() {
       if (res.ok) {
         const plan = await res.json()
         localStorage.setItem('sb_plan', JSON.stringify(plan))
+        localStorage.removeItem('sb_completed_days')
       }
       // If API fails we fall through — plan page will use mock
     } catch {
