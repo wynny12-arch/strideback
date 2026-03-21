@@ -171,6 +171,7 @@ export default function ProfilePage() {
   const [mainGoal, setMainGoal] = useState<MainGoal | null>(null)
   const [trainingPlan, setTrainingPlan] = useState('')
   const [weeklyMileage, setWeeklyMileage] = useState('')
+  const [distanceUnit, setDistanceUnit] = useState<'miles' | 'km'>('miles')
   const [longestRecentRun, setLongestRecentRun] = useState('')
   const [surface, setSurface] = useState<'road' | 'trail' | 'mixed' | 'treadmill' | null>(null)
   const [typicalPace, setTypicalPace] = useState('')
@@ -187,6 +188,7 @@ export default function ProfilePage() {
     if (saved.mainGoal) setMainGoal(saved.mainGoal as MainGoal)
     if (saved.trainingPlan) setTrainingPlan(saved.trainingPlan as string)
     if (saved.weeklyMileage) setWeeklyMileage(saved.weeklyMileage as string)
+    if (saved.distanceUnit) setDistanceUnit(saved.distanceUnit as 'miles' | 'km')
     if (saved.longestRecentRun) setLongestRecentRun(saved.longestRecentRun as string)
     if (saved.surface) setSurface(saved.surface as 'road' | 'trail' | 'mixed' | 'treadmill')
     if (saved.typicalPace) setTypicalPace(saved.typicalPace as string)
@@ -208,6 +210,7 @@ export default function ProfilePage() {
       mainGoal,
       trainingPlan: trainingPlan.trim() || null,
       weeklyMileage: weeklyMileage.trim() || null,
+      distanceUnit,
       longestRecentRun: longestRecentRun.trim() || null,
       surface: surface || null,
       typicalPace: typicalPace.trim() || null,
@@ -282,27 +285,39 @@ export default function ProfilePage() {
 
         <Section title="Running profile (optional)">
           <p className="text-xs text-[#555]/60 mb-3">Help us understand your typical training so we can calibrate your plan correctly.</p>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-xs font-medium text-[#555] mb-1.5">Weekly mileage</label>
-              <input
-                type="text"
-                value={weeklyMileage}
-                onChange={(e) => setWeeklyMileage(e.target.value)}
-                placeholder="e.g. 35 miles"
-                className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
-              />
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-medium text-[#555]">Weekly distance</label>
+              <div className="flex rounded-lg overflow-hidden border border-gray-200 text-xs font-medium">
+                {(['miles', 'km'] as const).map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => setDistanceUnit(u)}
+                    className={`px-3 py-1 transition-colors ${distanceUnit === u ? 'bg-sb-primary-mid text-white' : 'text-[#555]'}`}
+                  >
+                    {u}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-[#555] mb-1.5">Longest recent run</label>
-              <input
-                type="text"
-                value={longestRecentRun}
-                onChange={(e) => setLongestRecentRun(e.target.value)}
-                placeholder="e.g. 18 miles"
-                className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
-              />
-            </div>
+            <input
+              type="text"
+              value={weeklyMileage}
+              onChange={(e) => setWeeklyMileage(e.target.value)}
+              placeholder={distanceUnit === 'miles' ? 'e.g. 35' : 'e.g. 55'}
+              className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
+            />
+          </div>
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-[#555] mb-1.5">Longest recent run ({distanceUnit})</label>
+            <input
+              type="text"
+              value={longestRecentRun}
+              onChange={(e) => setLongestRecentRun(e.target.value)}
+              placeholder={distanceUnit === 'miles' ? 'e.g. 18' : 'e.g. 29'}
+              className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
+            />
           </div>
           <div className="mb-3">
             <label className="block text-xs font-medium text-[#555] mb-1.5">Typical pace</label>
