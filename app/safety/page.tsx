@@ -195,7 +195,7 @@ export default function SafetyPage() {
       await planPromiseRef.current
     } finally {
       setGenerating(false)
-      router.push(dest)
+      router.replace(dest)
     }
   }, [safetyData, router])
 
