@@ -170,6 +170,12 @@ export default function ProfilePage() {
   const [weeklyTrainingLoad, setWeeklyTrainingLoad] = useState<TrainingLoad | null>(null)
   const [mainGoal, setMainGoal] = useState<MainGoal | null>(null)
   const [trainingPlan, setTrainingPlan] = useState('')
+  const [weeklyMileage, setWeeklyMileage] = useState('')
+  const [longestRecentRun, setLongestRecentRun] = useState('')
+  const [surface, setSurface] = useState<'road' | 'trail' | 'mixed' | 'treadmill' | null>(null)
+  const [typicalPace, setTypicalPace] = useState('')
+  const [targetEvent, setTargetEvent] = useState('')
+  const [targetEventDate, setTargetEventDate] = useState('')
 
   useEffect(() => {
     const saved = getSaved()
@@ -180,6 +186,12 @@ export default function ProfilePage() {
     if (saved.weeklyTrainingLoad) setWeeklyTrainingLoad(saved.weeklyTrainingLoad as TrainingLoad)
     if (saved.mainGoal) setMainGoal(saved.mainGoal as MainGoal)
     if (saved.trainingPlan) setTrainingPlan(saved.trainingPlan as string)
+    if (saved.weeklyMileage) setWeeklyMileage(saved.weeklyMileage as string)
+    if (saved.longestRecentRun) setLongestRecentRun(saved.longestRecentRun as string)
+    if (saved.surface) setSurface(saved.surface as 'road' | 'trail' | 'mixed' | 'treadmill')
+    if (saved.typicalPace) setTypicalPace(saved.typicalPace as string)
+    if (saved.targetEvent) setTargetEvent(saved.targetEvent as string)
+    if (saved.targetEventDate) setTargetEventDate(saved.targetEventDate as string)
   }, [])
 
   const canContinue = firstName.trim() && age && experienceLevel && weeklyTrainingLoad && mainGoal
@@ -195,6 +207,12 @@ export default function ProfilePage() {
       weeklyTrainingLoad,
       mainGoal,
       trainingPlan: trainingPlan.trim() || null,
+      weeklyMileage: weeklyMileage.trim() || null,
+      longestRecentRun: longestRecentRun.trim() || null,
+      surface: surface || null,
+      typicalPace: typicalPace.trim() || null,
+      targetEvent: targetEvent.trim() || null,
+      targetEventDate: targetEventDate || null,
     }))
     router.push('/onboarding/injury-area')
   }
@@ -262,8 +280,84 @@ export default function ProfilePage() {
           <OptionGrid options={GOAL_OPTIONS} value={mainGoal} onChange={setMainGoal} name="goal" />
         </Section>
 
+        <Section title="Running profile (optional)">
+          <p className="text-xs text-[#555]/60 mb-3">Help us understand your typical training so we can calibrate your plan correctly.</p>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="block text-xs font-medium text-[#555] mb-1.5">Weekly mileage</label>
+              <input
+                type="text"
+                value={weeklyMileage}
+                onChange={(e) => setWeeklyMileage(e.target.value)}
+                placeholder="e.g. 35 miles"
+                className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-[#555] mb-1.5">Longest recent run</label>
+              <input
+                type="text"
+                value={longestRecentRun}
+                onChange={(e) => setLongestRecentRun(e.target.value)}
+                placeholder="e.g. 18 miles"
+                className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
+              />
+            </div>
+          </div>
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-[#555] mb-1.5">Typical pace</label>
+            <input
+              type="text"
+              value={typicalPace}
+              onChange={(e) => setTypicalPace(e.target.value)}
+              placeholder="e.g. 9 min/mile or 5:30 min/km"
+              className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
+            />
+          </div>
+          <label className="block text-xs font-medium text-[#555] mb-1.5">Preferred surface</label>
+          <div className="grid grid-cols-4 gap-2">
+            {(['road', 'trail', 'mixed', 'treadmill'] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSurface(surface === s ? null : s)}
+                className={`py-2 rounded-xl border text-xs font-medium capitalize transition-colors ${
+                  surface === s
+                    ? 'border-sb-primary-mid bg-sb-primary-mid text-white'
+                    : 'border-gray-200 text-[#555]'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Race or event goal (optional)">
+          <p className="text-xs text-[#555]/60 mb-3">Got a race on the calendar? We'll factor the deadline into your rehab progression.</p>
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-[#555] mb-1.5">Event</label>
+            <input
+              type="text"
+              value={targetEvent}
+              onChange={(e) => setTargetEvent(e.target.value)}
+              placeholder="e.g. London Marathon"
+              className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-[#555] mb-1.5">Date</label>
+            <input
+              type="date"
+              value={targetEventDate}
+              onChange={(e) => setTargetEventDate(e.target.value)}
+              className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
+            />
+          </div>
+        </Section>
+
         <Section title="Training plan (optional)">
-          <p className="text-xs text-[#555]/60 mb-3">Following a structured plan? Briefly describe it — e.g. "16-week marathon plan, currently week 8, running 40 miles/week."</p>
+          <p className="text-xs text-[#555]/60 mb-3">Following a structured plan? Briefly describe it — e.g. "16-week marathon plan, currently week 8."</p>
           <textarea
             value={trainingPlan}
             onChange={(e) => setTrainingPlan(e.target.value)}

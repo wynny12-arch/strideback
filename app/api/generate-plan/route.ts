@@ -29,7 +29,8 @@ Return ONLY a single valid JSON object. No markdown, no explanation, no code fen
 function buildPrompt(data: Record<string, unknown>): string {
   const {
     firstName, age, experienceLevel, weeklyTrainingLoad, mainGoal,
-    otherActivities, trainingPlan, region, onsetDate, hasDiagnosis, diagnosisName,
+    otherActivities, trainingPlan, weeklyMileage, longestRecentRun, surface,
+    typicalPace, targetEvent, targetEventDate, region, onsetDate, hasDiagnosis, diagnosisName,
     painScoreWorst, painScoreCurrent, aggravatingFactors, currentTolerance,
     pastedNotes, medicalUpdates,
   } = data
@@ -52,6 +53,11 @@ PATIENT PROFILE:
 - Current weekly training load: ${weeklyTrainingLoad}
 - Main goal: ${mainGoal}
 - Other training: ${Array.isArray(otherActivities) && otherActivities.length > 0 ? otherActivities.join(', ') : 'None'}
+- Weekly mileage: ${weeklyMileage || 'Not provided'}
+- Longest recent run: ${longestRecentRun || 'Not provided'}
+- Typical pace: ${typicalPace || 'Not provided'}
+- Preferred surface: ${surface || 'Not provided'}
+- Target event: ${targetEvent ? `${targetEvent}${targetEventDate ? ` on ${targetEventDate}` : ''}` : 'None'}
 - Training plan: ${trainingPlan || 'None provided'}
 
 INJURY DETAILS (all exercises must target this region specifically):
