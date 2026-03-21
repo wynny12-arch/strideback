@@ -1,0 +1,11 @@
+{
+  "status": "amber",
+  "redFlags": [],
+  "cautionFlags": [
+    "Pain score at worst is high (7/10) — monitor closely for any increase with loading",
+    "Symptoms have been present for 6 weeks without clinical assessment — physio review recommended within 2 weeks",
+    "Sitting-related pain may indicate gluteal tendinopathy involvement — re-assess if symptoms change"
+  ],
+  "reasoningSummary": "No red flags present, but several caution signals noted. The elevated worst pain score and duration without formal assessment warrant close monitoring. The plan includes explicit escalation triggers.",
+  "recommendedAction": "Proceed with rehab plan but adhere strictly to pain monitoring rules. Book a physiotherapy appointment within two weeks for clinical confirmation of diagnosis."
+}

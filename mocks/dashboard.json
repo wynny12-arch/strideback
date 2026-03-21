@@ -1,0 +1,30 @@
+{
+  "readinessScore": 74,
+  "painTrend": [
+    { "date": "Mar 7", "pain": 6 },
+    { "date": "Mar 8", "pain": 5 },
+    { "date": "Mar 9", "pain": 5 },
+    { "date": "Mar 10", "pain": 4 },
+    { "date": "Mar 11", "pain": 4 },
+    { "date": "Mar 12", "pain": 3 },
+    { "date": "Mar 13", "pain": 4 },
+    { "date": "Mar 14", "pain": 3 },
+    { "date": "Mar 15", "pain": 3 },
+    { "date": "Mar 16", "pain": 2 },
+    { "date": "Mar 17", "pain": 3 },
+    { "date": "Mar 18", "pain": 2 },
+    { "date": "Mar 19", "pain": 3 },
+    { "date": "Mar 20", "pain": 2 }
+  ],
+  "sessionConsistency": 80,
+  "weeklyLoad": [
+    { "week": "Week 1", "sessions": 2 },
+    { "week": "Week 2", "sessions": 3 },
+    { "week": "Week 3", "sessions": 3 },
+    { "week": "Week 4", "sessions": 3 }
+  ],
+  "currentPhase": "Load Management — Week 2",
+  "nextMilestone": "Progress to interval running in 5 days",
+  "streak": 6,
+  "weeklyReviewDue": true
+}

@@ -1,0 +1,22 @@
+{
+  "decision": "hold",
+  "summary": "Mixed week. 2 of 3 sessions completed. Pain during exercise averaged 4.6/10 — above the target threshold. Next-morning stiffness elevated on 3 days. One missed session due to pain flare.",
+  "whatImproved": [
+    "Completed 2 sessions despite elevated pain",
+    "Walking tolerance maintained"
+  ],
+  "whatNeedsAttention": [
+    "Pain during exercise exceeding 4/10 on multiple occasions",
+    "Next-morning stiffness above 4/10 on 3 of 7 days",
+    "Reported pain flare after Day 3 session — may have pushed too hard",
+    "Confidence score declining over the week"
+  ],
+  "nextWeekChanges": [
+    "Hold at current phase — do not progress exercises",
+    "Reduce hamstring curl to 3 sets with a lighter load",
+    "Return to run-walk 2 minutes / 2 minutes (previous protocol)",
+    "Add one extra rest day between sessions if pain remains elevated"
+  ],
+  "reasoning": "Pain scores exceeded the acceptable threshold on multiple sessions and next-morning stiffness was elevated, suggesting the current load is slightly too high for where the tendon is right now. Holding and slightly reducing load for one week before re-assessing is the conservative and clinically appropriate decision.",
+  "confidence": "moderate"
+}

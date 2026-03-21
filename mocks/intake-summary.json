@@ -1,0 +1,26 @@
+{
+  "caseSummary": "35-year-old recreational runner presenting with proximal hamstring tendinopathy. Onset approximately 6 weeks ago, likely related to a recent increase in running volume (added weekly long run). Pain is localised to the right sit bone area, rated 7/10 at worst during loading activities and currently 4/10. Aggravated by running, sitting for extended periods, and hip flexion under load. Able to walk without significant pain. No neurological symptoms reported.",
+  "suspectedRegion": "hamstring",
+  "knownDiagnosis": "Proximal hamstring tendinopathy",
+  "onset": "6 weeks ago, gradual onset coinciding with increased training load",
+  "painScoreWorst": 7,
+  "painScoreCurrent": 4,
+  "aggravatingFactors": ["running", "sitting", "loading", "stairs"],
+  "relievingFactors": ["rest", "gentle walking", "heat"],
+  "currentActivityTolerance": "Can walk comfortably. Short, flat runs below 20 minutes tolerable at low effort. Unable to run at normal training pace or distance without pain flare.",
+  "keyConstraints": [
+    "Avoid positions of hip flexion under load (e.g. deadlifts, seated stretching)",
+    "No high-speed running or sprinting",
+    "Limit sitting on hard surfaces without padding",
+    "No aggressive hamstring stretching — may worsen tendinopathy"
+  ],
+  "missingInformation": [
+    "Whether imaging (ultrasound or MRI) has been performed to confirm diagnosis",
+    "Previous episode history — first occurrence or recurrent?",
+    "Whether physiotherapy has been consulted previously"
+  ],
+  "uncertaintyNotes": [
+    "Diagnosis is user-reported; clinical confirmation by physiotherapist recommended",
+    "Exact running volume increase not quantified"
+  ]
+}

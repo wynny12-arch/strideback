@@ -9,6 +9,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
+  /* StrideBack brand colors */
+  --color-sb-primary: var(--sb-primary);
+  --color-sb-primary-mid: var(--sb-primary-mid);
+  --color-sb-primary-light: var(--sb-primary-light);
+  --color-sb-success: var(--sb-success);
+  --color-sb-caution: var(--sb-caution);
+  --color-sb-stop: var(--sb-stop);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -49,14 +56,22 @@
 }
 
 :root {
+  /* StrideBack brand colors */
+  --sb-primary: #1B3A5C;
+  --sb-primary-mid: #2E6DA4;
+  --sb-primary-light: #D5E8F0;
+  --sb-success: #1F7A4D;
+  --sb-caution: #F5A623;
+  --sb-stop: #C0392B;
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #1B3A5C;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
@@ -123,6 +138,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 16px;
+    color: #555555;
   }
   html {
     @apply font-sans;

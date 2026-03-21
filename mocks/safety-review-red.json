@@ -1,0 +1,10 @@
+{
+  "status": "red",
+  "redFlags": [
+    "Neurological symptoms detected: reported numbness and tingling down the leg",
+    "Inability to bear weight on the affected side"
+  ],
+  "cautionFlags": [],
+  "reasoningSummary": "Two significant red flag symptoms have been identified that require clinical review before any rehabilitation programme can be started. Neurological symptoms in combination with inability to bear weight may indicate nerve involvement or a more serious structural injury.",
+  "recommendedAction": "Do not proceed with self-managed rehabilitation. Seek clinical assessment immediately. If symptoms are severe or worsening, attend A&E. Otherwise, contact your GP or physiotherapist urgently."
+}
