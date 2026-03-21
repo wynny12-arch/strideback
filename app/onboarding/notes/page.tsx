@@ -38,7 +38,7 @@ export default function NotesPage() {
     localStorage.setItem('sb_onboarding', JSON.stringify({ ...getSaved(), pastedNotes: notes }))
     // TODO: Replace with live Claude API call — for now store the mock intake summary
     localStorage.setItem('sb_intake_summary', JSON.stringify(intakeSummaryMock))
-    router.push('/safety')
+    router.push('/onboarding/disclaimer')
   }
 
   return (
