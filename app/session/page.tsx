@@ -6,9 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
 import { ChevronDown, ChevronUp, MessageSquare, AlertTriangle } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
-// TODO: Replace with live Claude API calls
 import planMock from '@/mocks/rehab-plan.json'
-import coachData from '@/mocks/coach-explainer.json'
 import type { RehabPlan } from '@/types'
 
 function getStoredPlan(): RehabPlan {
@@ -112,7 +110,7 @@ function SessionContent() {
         {/* Coach intro */}
         <div className="mb-6 bg-sb-primary-light/60 rounded-xl p-4 flex gap-3">
           <MessageSquare className="w-5 h-5 text-sb-primary-mid shrink-0 mt-0.5" />
-          <p className="text-sm text-[#333] leading-relaxed">{coachData.intro}</p>
+          <p className="text-sm text-[#333] leading-relaxed">Focus today: {session.focus}. Work at a controlled tempo and stop if pain exceeds 3/10.</p>
         </div>
 
         {/* Warm-up */}

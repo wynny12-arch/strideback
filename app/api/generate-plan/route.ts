@@ -22,6 +22,8 @@ Pain rules:
 Running allowance: only allow running if current pain score ≤ 4/10 AND current tolerance is "can_jog" or "can_run".
 If pain score is > 6/10 or tolerance is "cannot_walk" or "can_walk", set allowed to false.
 
+Keep ALL string values concise — 15 words or fewer. Arrays should contain the minimum items specified, no more.
+
 Return ONLY a single valid JSON object. No markdown, no explanation, no code fences — raw JSON only.`
 
 function buildPrompt(data: Record<string, unknown>): string {
@@ -69,12 +71,12 @@ ${updatesText}
 Return a JSON object with EXACTLY this structure (all fields required):
 {
   "phase": "Phase name — e.g. Load Management — Weeks 1–2",
-  "planGoal": "2-3 sentence description of this week's rehabilitation goal",
+  "planGoal": "1 sentence describing this week's rehabilitation goal",
   "aiConfidence": "high" | "moderate" | "low",
   "runningAllowance": {
     "allowed": true | false,
     "guidance": "1-2 sentences on running guidance this week",
-    "protocol": ["step 1", "step 2", "step 3", "step 4", "step 5"]
+    "protocol": ["step 1", "step 2", "step 3"]
   },
   "strengthSessions": [
     {
@@ -96,15 +98,15 @@ Return a JSON object with EXACTLY this structure (all fields required):
     { "day": "Day 3", ... },
     { "day": "Day 5", ... }
   ],
-  "mobilityRecovery": ["item 1", "item 2", "item 3", "item 4"],
-  "educationNotes": ["note 1", "note 2", "note 3"],
-  "progressionRules": ["rule 1", "rule 2", "rule 3"],
-  "stopOrEscalateRules": ["rule 1", "rule 2", "rule 3"],
+  "mobilityRecovery": ["item 1", "item 2", "item 3"],
+  "educationNotes": ["note 1", "note 2"],
+  "progressionRules": ["rule 1", "rule 2"],
+  "stopOrEscalateRules": ["rule 1", "rule 2"],
   "reviewInDays": 7,
-  "warnings": ["warning 1", "warning 2"]
+  "warnings": ["warning 1"]
 }
 
-Include 3 exercises per session. Each session must have a warmUp array and an exercises array.`
+Include 3 exercises per session. Each session must have a warmUp array (2 items) and an exercises array.`
 }
 
 export async function POST(req: Request) {
