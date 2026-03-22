@@ -1,5 +1,18 @@
+'use client'
+
 import Link from 'next/link'
 import { Activity } from 'lucide-react'
+
+const SB_KEYS = [
+  'sb_onboarding', 'sb_plan', 'sb_completed_days',
+  'sb_checkin_history', 'sb_checkin_latest',
+  'sb_safety_review', 'sb_medical_updates',
+]
+
+function resetApp() {
+  SB_KEYS.forEach(k => localStorage.removeItem(k))
+  window.location.reload()
+}
 
 export default function WelcomePage() {
   return (
@@ -27,6 +40,14 @@ export default function WelcomePage() {
         <p className="mt-6 text-xs leading-relaxed" style={{ color: '#555', opacity: 0.6 }}>
           Takes about 3 minutes · No account required
         </p>
+
+        <button
+          type="button"
+          onClick={resetApp}
+          className="mt-12 text-xs text-[#555]/30 hover:text-[#555]/50 transition-colors"
+        >
+          Reset app
+        </button>
       </div>
     </div>
   )
