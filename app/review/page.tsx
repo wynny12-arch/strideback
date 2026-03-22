@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
-import { CheckCircle2, Circle, AlertTriangle, RotateCcw } from 'lucide-react'
+import { CheckCircle2, Circle, AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts'
 import { Button } from '@/components/ui/button'
 import { BottomNav } from '@/components/bottom-nav'
@@ -26,6 +26,12 @@ const CONFIDENCE_LABELS: Record<number, { label: string; color: string }> = {
   4: { label: 'Easy', color: '#1F7A4D' },
 }
 
+const DECISION_CONFIG = {
+  progress: { label: 'Progressing load', bg: 'bg-[#E8F5EE]', border: 'border-[#A8D5BC]', text: 'text-sb-success', Icon: TrendingUp },
+  hold: { label: 'Holding at current load', bg: 'bg-[#FEF3CD]', border: 'border-[#F5D98B]', text: 'text-[#B07D00]', Icon: Minus },
+  regress: { label: 'Reducing load this week', bg: 'bg-[#FEF3CD]', border: 'border-[#F5D98B]', text: 'text-[#B07D00]', Icon: TrendingDown },
+}
+
 const PAIN_COLOR = '#2E6DA4'
 
 function avg(nums: number[]) {
@@ -42,23 +48,42 @@ function PainBadge({ value }: { value: number }) {
   )
 }
 
+function getSaved(key: string, fallback: unknown = {}) {
+  try { return JSON.parse(localStorage.getItem(key) ?? JSON.stringify(fallback)) } catch { return fallback }
+}
+
 export default function ReviewPage() {
   useRequireOnboarding()
   const router = useRouter()
   const [checkIns, setCheckIns] = useState<CheckIn[]>([])
   const [completedDays, setCompletedDays] = useState<number[]>([])
   const [totalSessions, setTotalSessions] = useState(3)
+  const [generating, setGenerating] = useState(false)
+  const [nextPlan, setNextPlan] = useState<Record<string, unknown> | null>(null)
+  const planPromiseRef = useRef<Promise<void> | null>(null)
 
   useEffect(() => {
-    try {
-      const history: CheckIn[] = JSON.parse(localStorage.getItem('sb_checkin_history') ?? '[]')
-      // take only the most recent 3 (this week's sessions)
-      setCheckIns(history.slice(-3))
-      const completed: number[] = JSON.parse(localStorage.getItem('sb_completed_days') ?? '[]')
-      setCompletedDays(completed)
-      const plan = JSON.parse(localStorage.getItem('sb_plan') ?? '{}')
-      if (plan.strengthSessions?.length) setTotalSessions(plan.strengthSessions.length)
-    } catch { /* fall through */ }
+    const history: CheckIn[] = getSaved('sb_checkin_history', [])
+    const recentCheckIns = history.slice(-3)
+    setCheckIns(recentCheckIns)
+    const completed: number[] = getSaved('sb_completed_days', [])
+    setCompletedDays(completed)
+    const plan = getSaved('sb_plan', {})
+    if (plan.strengthSessions?.length) setTotalSessions(plan.strengthSessions.length)
+
+    // Start generating next plan in background immediately
+    const onboarding = getSaved('sb_onboarding', {})
+    const medicalUpdates = getSaved('sb_medical_updates', [])
+    planPromiseRef.current = fetch('/api/generate-next-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ onboarding, previousPlan: plan, checkIns: recentCheckIns, medicalUpdates }),
+    }).then(async (res) => {
+      if (res.ok) {
+        const generated = await res.json()
+        setNextPlan(generated)
+      }
+    }).catch(() => { /* silently fall back */ })
   }, [])
 
   const sessionsCompleted = completedDays.length
@@ -68,10 +93,9 @@ export default function ReviewPage() {
   const avgPainDuring = avg(checkIns.map(c => c.painDuring))
   const avgPainAfter = avg(checkIns.map(c => c.painAfter))
   const avgStiffness = avg(checkIns.map(c => c.nextDayStiffness))
-  const avgConfidence = avg(checkIns.map(c => c.confidenceScore))
 
   const chartData = checkIns.map((c, i) => ({
-    name: `Session ${i + 1}`,
+    name: `S${i + 1}`,
     before: c.painBefore,
     during: c.painDuring,
     after: c.painAfter,
@@ -79,10 +103,23 @@ export default function ReviewPage() {
 
   const notes = checkIns.filter(c => c.freeTextNotes).map(c => c.freeTextNotes as string)
 
-  const handleStartNextWeek = () => {
-    localStorage.removeItem('sb_completed_days')
-    router.replace('/plan')
+  const handleStartNextWeek = async () => {
+    setGenerating(true)
+    try {
+      await planPromiseRef.current
+      if (nextPlan) {
+        localStorage.setItem('sb_plan', JSON.stringify(nextPlan))
+      }
+    } finally {
+      localStorage.removeItem('sb_completed_days')
+      // Keep checkin history but don't clear it — it accumulates across weeks
+      setGenerating(false)
+      router.replace('/plan')
+    }
   }
+
+  const decision = nextPlan?.progressionDecision as 'progress' | 'hold' | 'regress' | undefined
+  const decisionConfig = decision ? DECISION_CONFIG[decision] : null
 
   return (
     <div className="min-h-screen bg-white pb-32">
@@ -147,13 +184,13 @@ export default function ReviewPage() {
                     <BarChart data={chartData} barGap={2} barCategoryGap="30%">
                       <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#888' }} axisLine={false} tickLine={false} />
                       <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#888' }} axisLine={false} tickLine={false} width={20} />
-                      <Bar dataKey="before" name="Before" radius={[3, 3, 0, 0]}>
+                      <Bar dataKey="before" radius={[3, 3, 0, 0]}>
                         {chartData.map((_, i) => <Cell key={i} fill={`${PAIN_COLOR}55`} />)}
                       </Bar>
-                      <Bar dataKey="during" name="During" radius={[3, 3, 0, 0]}>
+                      <Bar dataKey="during" radius={[3, 3, 0, 0]}>
                         {chartData.map((_, i) => <Cell key={i} fill={PAIN_COLOR} />)}
                       </Bar>
-                      <Bar dataKey="after" name="After" radius={[3, 3, 0, 0]}>
+                      <Bar dataKey="after" radius={[3, 3, 0, 0]}>
                         {chartData.map((_, i) => <Cell key={i} fill={`${PAIN_COLOR}99`} />)}
                       </Bar>
                     </BarChart>
@@ -197,7 +234,7 @@ export default function ReviewPage() {
                 <div>
                   <PainBadge value={avgStiffness} />
                   <p className="text-xs text-[#555]/60 mt-0.5">
-                    {avgStiffness > 5 ? 'Above threshold — consider reducing load next week' : 'Within acceptable range'}
+                    {avgStiffness > 5 ? 'Above threshold — load reduced next week' : 'Within acceptable range'}
                   </p>
                 </div>
               </div>
@@ -223,14 +260,24 @@ export default function ReviewPage() {
           </div>
         )}
 
-        {/* Placeholder for AI progression summary — v2 */}
-        <div className="mb-6 p-4 rounded-xl border border-dashed border-gray-200">
-          <div className="flex items-center gap-2 mb-2">
-            <RotateCcw className="w-4 h-4 text-[#555]/40" />
-            <p className="text-xs font-semibold text-[#555]/40 uppercase tracking-wide">AI progression analysis — coming soon</p>
+        {/* AI progression decision */}
+        {decisionConfig && (
+          <div className={`mb-6 rounded-xl border p-4 ${decisionConfig.bg} ${decisionConfig.border}`}>
+            <div className="flex items-center gap-2 mb-2">
+              <decisionConfig.Icon className={`w-4 h-4 shrink-0 ${decisionConfig.text}`} />
+              <p className={`text-xs font-semibold uppercase tracking-wide ${decisionConfig.text}`}>
+                Next week — {decisionConfig.label}
+              </p>
+            </div>
+            <p className="text-sm text-[#333] leading-relaxed">{nextPlan?.decisionReason as string}</p>
           </div>
-          <p className="text-sm text-[#555]/50 leading-snug">Personalised progression recommendations based on your week's data will appear here in the next update.</p>
-        </div>
+        )}
+
+        {!nextPlan && (
+          <div className="mb-6 px-4 py-4 bg-gray-50 rounded-xl">
+            <p className="text-xs text-[#555]/50 text-center">Building your next plan…</p>
+          </div>
+        )}
 
       </div>
 
@@ -240,9 +287,13 @@ export default function ReviewPage() {
           <Button
             className="w-full h-12 text-base rounded-xl"
             onClick={handleStartNextWeek}
+            disabled={generating}
           >
-            Start next week
+            {generating ? 'Building your next plan…' : 'Start next week'}
           </Button>
+          {generating && (
+            <p className="mt-2 text-xs text-center text-[#555]/50">Claude is generating your next plan</p>
+          )}
         </div>
       </div>
 
