@@ -165,7 +165,6 @@ function getMedicalUpdates(): unknown[] {
 export default function SafetyPage() {
   const [devState, setDevState] = useState<SafetyStatus>('green')
   const [generating, setGenerating] = useState(false)
-  const [navigating, setNavigating] = useState(false)
   const router = useRouter()
   const planPromiseRef = useRef<Promise<void> | null>(null)
 
@@ -196,15 +195,12 @@ export default function SafetyPage() {
       await planPromiseRef.current
     } finally {
       setGenerating(false)
-      setNavigating(true)
       router.replace(dest)
     }
   }, [safetyData, router])
 
   const handleContinue = () => generateAndContinue('/plan')
   const handleSaveAndReturn = () => generateAndContinue('/')
-
-  if (navigating) return <div className="min-h-screen bg-white" />
 
   if (safetyData.status === 'red') {
     return (
