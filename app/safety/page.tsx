@@ -194,7 +194,6 @@ export default function SafetyPage() {
       // If plan is already generated, this resolves instantly
       await planPromiseRef.current
     } finally {
-      setGenerating(false)
       router.replace(dest)
     }
   }, [safetyData, router])
