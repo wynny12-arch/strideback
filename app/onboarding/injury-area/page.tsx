@@ -63,13 +63,16 @@ export default function InjuryAreaPage() {
           Select the area that best describes your pain or problem.
         </p>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
           {REGIONS.map(({ value, label, detail }) => {
             const selected = region === value
             return (
-              <div
+              <button
                 key={value}
-                className={`flex items-center justify-between px-4 py-4 rounded-xl border ${
+                type="button"
+                style={{ touchAction: 'manipulation' }}
+                onClick={() => setRegion(value)}
+                className={`w-full flex items-center justify-between px-4 py-4 rounded-xl border text-left transition-colors ${
                   selected ? 'border-sb-primary-mid bg-sb-primary-mid' : 'border-gray-200 bg-white'
                 }`}
               >
@@ -81,19 +84,11 @@ export default function InjuryAreaPage() {
                     {detail}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  style={{ touchAction: 'manipulation' }}
-                  onClick={() => setRegion(value)}
-                  className={`p-1.5 -mr-1 shrink-0 ${selected ? 'text-white' : 'text-[#555]/40'}`}
-                  aria-label={`Select ${label}`}
-                >
-                  {selected
-                    ? <CheckCircle2 className="w-4 h-4" />
-                    : <ChevronRight className="w-4 h-4" />
-                  }
-                </button>
-              </div>
+                {selected
+                  ? <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
+                  : <ChevronRight className="w-4 h-4 text-[#555]/40 shrink-0" />
+                }
+              </button>
             )
           })}
         </div>

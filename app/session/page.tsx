@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
-import { ChevronDown, ChevronUp, MessageSquare, AlertTriangle } from 'lucide-react'
+import { ChevronDown, ChevronUp, AlertTriangle, Footprints, Flame } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
 import planMock from '@/mocks/rehab-plan.json'
 import type { RehabPlan } from '@/types'
@@ -107,16 +107,14 @@ function SessionContent() {
       </div>
 
       <div className="w-full max-w-[480px] mx-auto px-6 pt-6">
-        {/* Coach intro */}
-        <div className="mb-6 bg-sb-primary-light/60 rounded-xl p-4 flex gap-3">
-          <MessageSquare className="w-5 h-5 text-sb-primary-mid shrink-0 mt-0.5" />
-          <p className="text-sm text-[#333] leading-relaxed">Focus today: {session.focus}. Work at a controlled tempo and stop if pain exceeds 3/10.</p>
-        </div>
 
         {/* Warm-up */}
         {session.warmUp && session.warmUp.length > 0 && (
           <div className="mb-6">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Warm-up first</p>
+            <div className="flex items-center gap-2 mb-3">
+              <Flame className="w-4 h-4 text-sb-caution" />
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50">Warm-up</p>
+            </div>
             <div className="bg-sb-primary-light/60 rounded-xl px-4 py-3 space-y-2">
               {session.warmUp.map((item, i) => (
                 <div key={i} className="flex items-start gap-2.5 text-sm text-[#555] leading-snug">
@@ -129,40 +127,40 @@ function SessionContent() {
         )}
 
         {/* Exercises */}
-        <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Exercises</p>
-        <div className="space-y-3 mb-6">
-          {session.exercises.map((exercise, i) => (
-            <ExerciseCard
-              key={i}
-              exercise={exercise}
-              expanded={openCard === i}
-              onToggle={() => { setAnyOpened(true); setOpenCard(openCard === i ? null : i) }}
-            />
-          ))}
+        <div className="mb-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Exercises</p>
+          <div className="space-y-3">
+            {session.exercises.map((exercise, i) => (
+              <ExerciseCard
+                key={i}
+                exercise={exercise}
+                expanded={openCard === i}
+                onToggle={() => { setAnyOpened(true); setOpenCard(openCard === i ? null : i) }}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Disclaimer */}
-        <p className="mb-6 text-xs text-[#555]/50 leading-relaxed text-center">StrideBack provides structured guidance and educational support for self-managed rehabilitation. It is not a substitute for professional medical diagnosis or treatment.</p>
-
-        {/* Running protocol */}
+        {/* Running */}
         {plan.runningAllowance.allowed && (
           <div className="mb-6">
-            <button
-              type="button"
-              onClick={() => setShowRunning(v => !v)}
-              onTouchEnd={(e) => { e.preventDefault(); setShowRunning(v => !v) }}
-              className="w-full flex items-center justify-between p-4 rounded-xl border border-gray-200 text-left"
-            >
-              <div>
-                <p className="text-xs font-semibold text-sb-success uppercase tracking-wide mb-0.5">Running allowed</p>
-                <p className="text-sm font-medium text-[#333]">View today's run protocol</p>
-              </div>
-              {showRunning ? <ChevronUp className="w-4 h-4 text-[#555]/40 shrink-0" /> : <ChevronDown className="w-4 h-4 text-[#555]/40 shrink-0" />}
-            </button>
-            {showRunning && (
-              <div className="mt-2 p-4 rounded-xl bg-[#E8F5EE]">
-                <p className="text-xs text-[#555] mb-3 leading-relaxed">{plan.runningAllowance.guidance}</p>
-                <ul className="space-y-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Footprints className="w-4 h-4 text-sb-success" />
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50">Running</p>
+            </div>
+            <div className="rounded-xl bg-[#E8F5EE] p-4">
+              <p className="text-sm text-[#555] mb-3 leading-relaxed">{plan.runningAllowance.guidance}</p>
+              <button
+                type="button"
+                onClick={() => setShowRunning(v => !v)}
+                onTouchEnd={(e) => { e.preventDefault(); setShowRunning(v => !v) }}
+                className="flex items-center gap-1 text-xs font-semibold text-sb-success"
+              >
+                {showRunning ? 'Hide protocol' : 'View run protocol'}
+                {showRunning ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </button>
+              {showRunning && (
+                <ul className="mt-3 space-y-2">
                   {plan.runningAllowance.protocol.map((step, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-[#555]">
                       <span className="text-sb-success font-bold shrink-0">{i + 1}.</span>
@@ -170,10 +168,27 @@ function SessionContent() {
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
+
+        {/* Cool down */}
+        <div className="mb-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Cool down</p>
+          <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2">
+            {['5 minutes easy walking', 'Gentle stretching of the worked area — hold each stretch 30 seconds', 'Note any pain or stiffness to report in your check-in'].map((item, i) => (
+              <div key={i} className="flex items-start gap-2.5 text-sm text-[#555] leading-snug">
+                <span className="text-sb-primary-mid font-bold shrink-0 w-4">{i + 1}.</span>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Disclaimer */}
+        <p className="mb-6 text-xs text-[#555]/50 leading-relaxed text-center">StrideBack provides structured guidance and educational support for self-managed rehabilitation. It is not a substitute for professional medical diagnosis or treatment.</p>
+
       </div>
 
       {/* Fixed CTA — sits above bottom nav, shown only after engaging with session */}
