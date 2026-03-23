@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { OtherActivity, ExperienceLevel, TrainingLoad, MainGoal } from '@/types'
 
@@ -170,6 +170,7 @@ export default function ProfilePage() {
   const [weeklyTrainingLoad, setWeeklyTrainingLoad] = useState<TrainingLoad | null>(null)
   const [mainGoal, setMainGoal] = useState<MainGoal | null>(null)
   const [trainingPlan, setTrainingPlan] = useState('')
+  const [extraOpen, setExtraOpen] = useState(false)
   const [weeklyMileage, setWeeklyMileage] = useState('')
   const [distanceUnit, setDistanceUnit] = useState<'miles' | 'km'>('miles')
   const [longestRecentRun, setLongestRecentRun] = useState('')
@@ -283,104 +284,93 @@ export default function ProfilePage() {
           <OptionGrid options={GOAL_OPTIONS} value={mainGoal} onChange={setMainGoal} name="goal" />
         </Section>
 
-        <Section title="Running profile (optional)">
-          <p className="text-xs text-[#555]/60 mb-3">Help us understand your typical training so we can calibrate your plan correctly.</p>
-          <div className="mb-3">
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-[#555]">Weekly distance</label>
-              <div className="flex rounded-lg overflow-hidden border border-gray-200 text-xs font-medium">
-                {(['miles', 'km'] as const).map((u) => (
-                  <button
-                    key={u}
-                    type="button"
-                    onClick={() => setDistanceUnit(u)}
-                    className={`px-3 py-1 transition-colors ${distanceUnit === u ? 'bg-sb-primary-mid text-white' : 'text-[#555]'}`}
-                  >
-                    {u}
-                  </button>
-                ))}
-              </div>
+        {/* Optional extras accordion */}
+        <div className="mb-7 border border-gray-200 rounded-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setExtraOpen(v => !v)}
+            className="w-full flex items-center justify-between px-4 py-4 bg-white"
+          >
+            <div className="text-left">
+              <p className="text-sm font-semibold text-[#333]">Additional context <span className="text-xs font-normal text-[#555]/50">(optional)</span></p>
+              <p className="text-xs text-[#555]/50 mt-0.5">Running profile, race goals, training plan</p>
             </div>
-            <input
-              type="text"
-              value={weeklyMileage}
-              onChange={(e) => setWeeklyMileage(e.target.value)}
-              placeholder={distanceUnit === 'miles' ? 'e.g. 35' : 'e.g. 55'}
-              className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
-            />
-          </div>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-[#555] mb-1.5">Longest recent run ({distanceUnit})</label>
-            <input
-              type="text"
-              value={longestRecentRun}
-              onChange={(e) => setLongestRecentRun(e.target.value)}
-              placeholder={distanceUnit === 'miles' ? 'e.g. 18' : 'e.g. 29'}
-              className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
-            />
-          </div>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-[#555] mb-1.5">Typical pace</label>
-            <input
-              type="text"
-              value={typicalPace}
-              onChange={(e) => setTypicalPace(e.target.value)}
-              placeholder="e.g. 9 min/mile or 5:30 min/km"
-              className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
-            />
-          </div>
-          <label className="block text-xs font-medium text-[#555] mb-1.5">Preferred surface</label>
-          <div className="grid grid-cols-4 gap-2">
-            {(['road', 'trail', 'mixed', 'treadmill'] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setSurface(surface === s ? null : s)}
-                className={`py-2 rounded-xl border text-xs font-medium capitalize transition-colors ${
-                  surface === s
-                    ? 'border-sb-primary-mid bg-sb-primary-mid text-white'
-                    : 'border-gray-200 text-[#555]'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-        </Section>
+            {extraOpen ? <ChevronUp className="w-4 h-4 text-[#555]/40 shrink-0" /> : <ChevronDown className="w-4 h-4 text-[#555]/40 shrink-0" />}
+          </button>
 
-        <Section title="Race or event goal (optional)">
-          <p className="text-xs text-[#555]/60 mb-3">Got a race on the calendar? We'll factor the deadline into your rehab progression.</p>
-          <div className="mb-3">
-            <label className="block text-xs font-medium text-[#555] mb-1.5">Event</label>
-            <input
-              type="text"
-              value={targetEvent}
-              onChange={(e) => setTargetEvent(e.target.value)}
-              placeholder="e.g. London Marathon"
-              className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-[#555] mb-1.5">Date</label>
-            <input
-              type="date"
-              value={targetEventDate}
-              onChange={(e) => setTargetEventDate(e.target.value)}
-              className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
-            />
-          </div>
-        </Section>
+          {extraOpen && (
+            <div className="px-4 pb-4 border-t border-gray-100 space-y-6 pt-4">
 
-        <Section title="Training plan (optional)">
-          <p className="text-xs text-[#555]/60 mb-3">Following a structured plan? Briefly describe it — e.g. "16-week marathon plan, currently week 8."</p>
-          <textarea
-            value={trainingPlan}
-            onChange={(e) => setTrainingPlan(e.target.value)}
-            placeholder="Describe your training plan..."
-            rows={3}
-            className="w-full px-3 py-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid resize-none"
-          />
-        </Section>
+              {/* Running profile */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Running profile</p>
+                <div className="mb-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-[#555]">Weekly distance</label>
+                    <div className="flex rounded-lg overflow-hidden border border-gray-200 text-xs font-medium">
+                      {(['miles', 'km'] as const).map((u) => (
+                        <button key={u} type="button" onClick={() => setDistanceUnit(u)}
+                          className={`px-3 py-1 transition-colors ${distanceUnit === u ? 'bg-sb-primary-mid text-white' : 'text-[#555]'}`}>
+                          {u}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <input type="text" value={weeklyMileage} onChange={(e) => setWeeklyMileage(e.target.value)}
+                    placeholder={distanceUnit === 'miles' ? 'e.g. 35' : 'e.g. 55'}
+                    className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid" />
+                </div>
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-[#555] mb-1.5">Longest recent run ({distanceUnit})</label>
+                  <input type="text" value={longestRecentRun} onChange={(e) => setLongestRecentRun(e.target.value)}
+                    placeholder={distanceUnit === 'miles' ? 'e.g. 18' : 'e.g. 29'}
+                    className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid" />
+                </div>
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-[#555] mb-1.5">Typical pace</label>
+                  <input type="text" value={typicalPace} onChange={(e) => setTypicalPace(e.target.value)}
+                    placeholder="e.g. 9 min/mile or 5:30 min/km"
+                    className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid" />
+                </div>
+                <label className="block text-xs font-medium text-[#555] mb-1.5">Preferred surface</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(['road', 'trail', 'mixed', 'treadmill'] as const).map((s) => (
+                    <button key={s} type="button" onClick={() => setSurface(surface === s ? null : s)}
+                      className={`py-2 rounded-xl border text-xs font-medium capitalize transition-colors ${surface === s ? 'border-sb-primary-mid bg-sb-primary-mid text-white' : 'border-gray-200 text-[#555]'}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Race goal */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Race or event goal</p>
+                <div className="mb-3">
+                  <label className="block text-xs font-medium text-[#555] mb-1.5">Event</label>
+                  <input type="text" value={targetEvent} onChange={(e) => setTargetEvent(e.target.value)}
+                    placeholder="e.g. London Marathon"
+                    className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[#555] mb-1.5">Date</label>
+                  <input type="date" value={targetEventDate} onChange={(e) => setTargetEventDate(e.target.value)}
+                    className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid" />
+                </div>
+              </div>
+
+              {/* Training plan */}
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Training plan</p>
+                <p className="text-xs text-[#555]/60 mb-3">Following a structured plan? Briefly describe it — e.g. "16-week marathon plan, currently week 8."</p>
+                <textarea value={trainingPlan} onChange={(e) => setTrainingPlan(e.target.value)}
+                  placeholder="Describe your training plan..." rows={3}
+                  className="w-full px-3 py-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid resize-none" />
+              </div>
+
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-100 px-6 py-4">
