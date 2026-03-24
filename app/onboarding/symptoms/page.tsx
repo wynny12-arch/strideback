@@ -112,13 +112,13 @@ export default function SymptomsPage() {
 
         {/* Onset */}
         <div className="mb-7">
-          <label className="block text-sm font-medium text-[#333] mb-1.5">When did this start?</label>
-          <input
-            type="text"
+          <label className="block text-sm font-medium text-[#333] mb-1.5">Tell us about your injury</label>
+          <textarea
             value={onsetDate}
             onChange={(e) => setOnsetDate(e.target.value)}
-            placeholder="e.g. 6 weeks ago, after a long run"
-            className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
+            placeholder="e.g. Started 6 weeks ago after a long run. Sharp pain at the back of my heel, worse in the morning and after sitting for long periods..."
+            rows={4}
+            className="w-full px-3 py-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid resize-none"
           />
         </div>
 

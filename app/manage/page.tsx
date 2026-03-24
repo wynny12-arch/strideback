@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { ChevronDown, ChevronUp, CheckCircle2, Plus, Trash2, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { ChevronDown, ChevronUp, CheckCircle2, Plus, Trash2, AlertCircle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { BottomNav } from '@/components/bottom-nav'
@@ -150,6 +151,7 @@ function formatDate(iso: string) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ManagePage() {
+  const router = useRouter()
   const s = getSaved()
 
   // Profile
@@ -184,6 +186,10 @@ export default function ManagePage() {
   const [showAddUpdate, setShowAddUpdate] = useState(false)
   const [newUpdateType, setNewUpdateType] = useState<MedicalUpdateType>('physio_visit')
   const [newUpdateText, setNewUpdateText] = useState('')
+
+  // Regenerate plan
+  const [regenerating, setRegenerating] = useState(false)
+  const [regenDone, setRegenDone] = useState(false)
 
   useEffect(() => { setUpdates(getUpdates()) }, [])
 
@@ -242,11 +248,34 @@ export default function ManagePage() {
     setAggravatingFactors(prev => prev.includes(f) ? prev.filter(x => x !== f) : [...prev, f])
   }
 
+  const regeneratePlan = useCallback(async () => {
+    setRegenerating(true)
+    setRegenDone(false)
+    try {
+      const onboarding = getSaved()
+      const medicalUpdates = getUpdates()
+      localStorage.removeItem('sb_completed_days')
+      const res = await fetch('/api/generate-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...onboarding, medicalUpdates }),
+      })
+      if (res.ok) {
+        const plan = await res.json()
+        localStorage.setItem('sb_plan', JSON.stringify(plan))
+        setRegenDone(true)
+        setTimeout(() => router.replace('/plan'), 1000)
+      }
+    } finally {
+      setRegenerating(false)
+    }
+  }, [router])
+
   // ── Summaries for collapsed headers ─────────────────────────────────────────
 
   const profileSummary = firstName ? `${firstName}, ${age || '—'} · ${EXPERIENCE_OPTIONS.find(e => e.value === experienceLevel)?.label || 'Experience not set'}` : 'Not set'
   const injurySummary = REGIONS.find(r => r.value === region)?.label || 'Not set'
-  const symptomsSummary = onsetDate ? `Started ${onsetDate} · Pain ${painScoreCurrent}/10 now` : 'Not set'
+  const symptomsSummary = onsetDate ? `${onsetDate.slice(0, 40)}${onsetDate.length > 40 ? '…' : ''} · Pain ${painScoreCurrent}/10` : 'Not set'
   const notesSummary = notes ? notes.slice(0, 60) + (notes.length > 60 ? '…' : '') : 'No notes added'
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -259,10 +288,21 @@ export default function ManagePage() {
         <p className="text-sm text-[#555]/70 mb-6">Edit your details or log medical updates. Changes will be applied when your plan next regenerates.</p>
 
         {/* Plan update notice */}
-        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-3 mb-5">
+        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-3 mb-3">
           <AlertCircle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
           <p className="text-xs text-amber-700">Any changes you save here will be used the next time your plan is generated or reviewed.</p>
         </div>
+
+        {/* Regenerate plan */}
+        <button
+          type="button"
+          onClick={regeneratePlan}
+          disabled={regenerating}
+          className="w-full h-12 mb-5 flex items-center justify-center gap-2 rounded-xl bg-sb-primary text-white text-sm font-semibold disabled:opacity-70"
+        >
+          <RefreshCw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
+          {regenDone ? 'Plan ready — taking you there…' : regenerating ? 'Building your new plan…' : 'Regenerate plan now'}
+        </button>
 
         {/* ── Profile ── */}
         <SectionCard title="Your profile" summary={profileSummary}>
@@ -361,10 +401,10 @@ export default function ManagePage() {
         <SectionCard title="Symptoms & pain" summary={symptomsSummary}>
           <div className="mt-4 space-y-5">
             <div>
-              <label className="block text-xs font-medium text-[#555] mb-1.5">When did this start?</label>
-              <input value={onsetDate} onChange={e => setOnsetDate(e.target.value)}
-                placeholder="e.g. 6 weeks ago, after a long run"
-                className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid" />
+              <label className="block text-xs font-medium text-[#555] mb-1.5">Tell us about your injury</label>
+              <textarea value={onsetDate} onChange={e => setOnsetDate(e.target.value)} rows={4}
+                placeholder="e.g. Started 6 weeks ago after a long run. Sharp pain at the back of my heel, worse in the morning and after sitting for long periods..."
+                className="w-full px-3 py-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid resize-none" />
             </div>
 
             <div>
