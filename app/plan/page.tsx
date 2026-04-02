@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
-import { CheckCircle2, XCircle, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, StopCircle, Shield, Zap } from 'lucide-react'
+import { CheckCircle2, XCircle, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, StopCircle, Shield, Zap, HeartPulse } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
 import planMock from '@/mocks/rehab-plan.json'
-import type { RehabPlan, RunnerTier } from '@/types'
+import type { RehabPlan, RunnerTier, RunnerGoal } from '@/types'
 
 function getStoredPlan(): RehabPlan {
   try {
@@ -16,26 +16,88 @@ function getStoredPlan(): RehabPlan {
   return planMock as RehabPlan
 }
 
-const CONFIDENCE_COLORS = {
-  high: { bg: 'bg-[#E8F5EE]', text: 'text-sb-success', label: 'High confidence' },
-  moderate: { bg: 'bg-[#FEF3CD]', text: 'text-[#B07D00]', label: 'Moderate confidence' },
-  low: { bg: 'bg-[#FEF3CD]', text: 'text-[#B07D00]', label: 'Lower confidence' },
+const TIER_CONFIG: Record<RunnerTier, {
+  label: string
+  accent: string
+  headerBg: string
+  traits: string[]
+  checkinDesc: string
+}> = {
+  novice: {
+    label: 'Novice Runner',
+    accent: '#6B7280',
+    headerBg: 'bg-sb-primary',
+    traits: ['Building your running base', 'Focused on safe progression', 'Simple weekly check-ins'],
+    checkinDesc: 'Weekly check-in',
+  },
+  intermediate: {
+    label: 'Intermediate Runner',
+    accent: '#5B6EF5',
+    headerBg: 'bg-sb-primary',
+    traits: ['1–3 years running', 'Regular racer or consistent trainer', 'Check-ins every few days'],
+    checkinDesc: 'Check in every 3–4 days',
+  },
+  advanced: {
+    label: 'Advanced Runner',
+    accent: '#1D3A6E',
+    headerBg: 'bg-sb-primary',
+    traits: ['Competitive runner', 'High weekly training load', 'Detailed progress tracking'],
+    checkinDesc: 'Check in every 2–3 days',
+  },
+  semi_elite: {
+    label: 'Semi-Elite Runner',
+    accent: '#1A9E5C',
+    headerBg: 'bg-sb-primary',
+    traits: ['Marathon < 3hrs or 5k < 17min', 'Daily monitoring & HRV tracking', 'Full data integration'],
+    checkinDesc: 'Daily check-in',
+  },
 }
 
-const TIER_LABELS: Record<RunnerTier, { label: string; color: string; bg: string }> = {
-  novice:       { label: 'Novice',      color: 'text-[#555]',        bg: 'bg-gray-100' },
-  intermediate: { label: 'Intermediate', color: 'text-sb-primary-mid', bg: 'bg-sb-primary-mid/10' },
-  advanced:     { label: 'Advanced',    color: 'text-sb-primary',    bg: 'bg-sb-primary/10' },
-  semi_elite:   { label: 'Semi-Elite',  color: 'text-sb-success',    bg: 'bg-sb-success/10' },
-}
-
-const CHECKIN_LABELS: Record<number, string> = {
-  1: 'Daily check-ins',
-  2: 'Check in every 2 days',
-  3: 'Check in every 3 days',
-  4: 'Check in every 4 days',
-  7: 'Weekly check-ins',
-}
+const GOAL_PHASES: {
+  goal: RunnerGoal
+  icon: React.ElementType
+  label: string
+  activeDesc: string
+  nextDesc: string
+  laterDesc: string
+  color: string
+  activeBg: string
+  inactiveBg: string
+}[] = [
+  {
+    goal: 'rehab',
+    icon: HeartPulse,
+    label: 'Rehab',
+    activeDesc: 'Active now — exercises targeting your injury, guided return to running.',
+    nextDesc: 'Starts first to address your injury.',
+    laterDesc: 'Included if you add rehab to your goals.',
+    color: 'text-sb-caution',
+    activeBg: 'bg-sb-caution',
+    inactiveBg: 'bg-sb-caution/10',
+  },
+  {
+    goal: 'prevention',
+    icon: Shield,
+    label: 'Prevention',
+    activeDesc: 'Active now — prehab and stability work to keep you injury-free.',
+    nextDesc: 'Woven in as your rehab progresses and pain reduces.',
+    laterDesc: 'Included if you add prevention to your goals.',
+    color: 'text-sb-success',
+    activeBg: 'bg-sb-success',
+    inactiveBg: 'bg-sb-success/10',
+  },
+  {
+    goal: 'optimisation',
+    icon: Zap,
+    label: 'Performance',
+    activeDesc: 'Active now — strength and power work to improve your running economy.',
+    nextDesc: 'Added once rehab is progressing well.',
+    laterDesc: 'Included if you add performance to your goals.',
+    color: 'text-sb-primary-mid',
+    activeBg: 'bg-sb-primary-mid',
+    inactiveBg: 'bg-sb-primary-mid/10',
+  },
+]
 
 const DISCLAIMER = 'StrideBack provides structured guidance and educational support for self-managed rehabilitation. It is not a substitute for professional medical diagnosis or treatment.'
 
@@ -53,38 +115,121 @@ export default function PlanPage() {
     setCompletedDays(stored)
   }, [])
 
-  const tierInfo = plan.runnerTier ? TIER_LABELS[plan.runnerTier] : null
   const goals = plan.runnerGoals ?? []
   const hasRehab = goals.includes('rehab')
   const hasPrevention = goals.includes('prevention')
   const hasOptimisation = goals.includes('optimisation')
-  const checkinLabel = plan.checkinFrequencyDays ? CHECKIN_LABELS[plan.checkinFrequencyDays] ?? `Check in every ${plan.checkinFrequencyDays} days` : null
+  const tierConfig = plan.runnerTier ? TIER_CONFIG[plan.runnerTier] : null
+
+  // Determine phase status for each goal
+  function phaseStatus(goal: RunnerGoal): 'active' | 'next' | 'not-selected' {
+    if (!goals.includes(goal)) return 'not-selected'
+    if (hasRehab && goal !== 'rehab') return 'next'
+    return 'active'
+  }
 
   return (
     <div className="min-h-screen bg-white pb-44">
-      {/* Header */}
+
+      {/* ── Tier Hero ─────────────────────────────────────────────────────── */}
       <div className="bg-sb-primary px-6 pt-12 pb-8">
         <div className="w-full max-w-[480px] mx-auto">
-          <div className="flex items-center gap-2 mb-2">
-            <p className="text-white/60 text-xs font-semibold uppercase tracking-widest">Your plan</p>
-            {tierInfo && (
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${tierInfo.bg} ${tierInfo.color}`}>
-                {tierInfo.label}
-              </span>
-            )}
+          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-3">Your runner profile</p>
+
+          {tierConfig ? (
+            <>
+              <h1 className="text-2xl font-bold text-white mb-1">{tierConfig.label}</h1>
+              <p className="text-white/60 text-sm mb-5">{tierConfig.checkinDesc}</p>
+              <div className="flex flex-col gap-2">
+                {tierConfig.traits.map((trait, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/40 shrink-0" />
+                    <p className="text-white/80 text-sm">{trait}</p>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <h1 className="text-2xl font-bold text-white">{plan.phase}</h1>
+          )}
+        </div>
+      </div>
+
+      {/* ── Journey Roadmap ───────────────────────────────────────────────── */}
+      <div className="bg-sb-primary-light px-6 py-6 border-b border-gray-100">
+        <div className="w-full max-w-[480px] mx-auto">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Your journey</p>
+
+          <div className="flex gap-3">
+            {GOAL_PHASES.map((phase, i) => {
+              const status = phaseStatus(phase.goal)
+              const isActive = status === 'active'
+              const isNext = status === 'next'
+              const notSelected = status === 'not-selected'
+              const Icon = phase.icon
+              const ordinal = goals.includes(phase.goal)
+                ? goals.indexOf(phase.goal) + (hasRehab && phase.goal !== 'rehab' ? 1 : 1)
+                : null
+
+              // Calculate position label
+              let positionLabel = ''
+              if (isActive) positionLabel = hasRehab && phase.goal === 'rehab' ? 'Phase 1 · Now' : 'Phase 1 · Now'
+              else if (isNext) {
+                const pos = goals.indexOf(phase.goal) + 1
+                positionLabel = `Phase ${pos} · Next`
+              }
+
+              return (
+                <div
+                  key={phase.goal}
+                  className={`flex-1 rounded-2xl p-3 flex flex-col gap-2 transition-all ${
+                    isActive ? 'bg-white shadow-sm border-2 border-sb-primary-mid' : notSelected ? 'bg-white/40 border border-dashed border-gray-200' : 'bg-white border border-gray-200'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isActive ? phase.activeBg : notSelected ? 'bg-gray-100' : phase.inactiveBg}`}>
+                    <Icon className={`w-4 h-4 ${isActive ? 'text-white' : notSelected ? 'text-gray-300' : phase.color}`} />
+                  </div>
+                  <div>
+                    {positionLabel ? (
+                      <p className={`text-[10px] font-semibold mb-0.5 ${isActive ? 'text-sb-primary-mid' : 'text-[#999]'}`}>{positionLabel}</p>
+                    ) : null}
+                    <p className={`text-xs font-bold leading-tight ${isActive ? 'text-sb-primary' : notSelected ? 'text-gray-300' : 'text-[#555]'}`}>{phase.label}</p>
+                  </div>
+                  <p className={`text-[10px] leading-snug ${isActive ? 'text-[#555]' : notSelected ? 'text-gray-300' : 'text-[#777]'}`}>
+                    {isActive ? phase.activeDesc : isNext ? phase.nextDesc : phase.laterDesc}
+                  </p>
+                </div>
+              )
+            })}
           </div>
-          <h1 className="text-xl font-bold text-white leading-snug">{plan.phase}</h1>
-          {checkinLabel && (
-            <p className="text-white/50 text-xs mt-2">{checkinLabel}</p>
+
+          {/* Rehab-first note */}
+          {hasRehab && goals.length > 1 && (
+            <div className="mt-4 flex items-start gap-2 bg-white rounded-xl px-4 py-3 border border-gray-100">
+              <span className="text-base mt-0.5">💡</span>
+              <p className="text-xs text-[#555] leading-relaxed">
+                Rehab comes first. {hasPrevention ? 'Prevention' : ''}{hasPrevention && hasOptimisation ? ' and performance' : hasOptimisation ? 'Performance' : ''} work will be woven in progressively as your recovery advances.
+              </p>
+            </div>
           )}
         </div>
       </div>
 
       <div className="w-full max-w-[480px] mx-auto px-6">
-        {/* Plan goal */}
-        <div className="py-6 border-b border-gray-100">
-          <p className="text-sm text-[#555] leading-relaxed">{plan.planGoal}</p>
-        </div>
+        {/* Current phase */}
+        {tierConfig && (
+          <div className="py-5 border-b border-gray-100">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-1">Current phase</p>
+            <p className="text-base font-bold text-sb-primary">{plan.phase}</p>
+            <p className="text-sm text-[#555] leading-relaxed mt-1">{plan.planGoal}</p>
+          </div>
+        )}
+
+        {!tierConfig && (
+          <div className="py-6 border-b border-gray-100">
+            <p className="text-sm text-[#555] leading-relaxed">{plan.planGoal}</p>
+          </div>
+        )}
 
         {/* Running allowance */}
         <div className="py-6 border-b border-gray-100">
@@ -125,10 +270,13 @@ export default function PlanPage() {
           </div>
         </div>
 
-        {/* This week's sessions (rehab only) */}
+        {/* Rehab sessions */}
         {hasRehab && plan.strengthSessions.length > 0 && (
           <div className="py-6 border-b border-gray-100">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Rehab sessions</p>
+            <div className="flex items-center gap-2 mb-4">
+              <HeartPulse className="w-4 h-4 text-sb-caution" />
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50">Rehab sessions</p>
+            </div>
             <div className="space-y-3">
               {plan.strengthSessions.map((session, i) => {
                 const done = completedDays.includes(i)
