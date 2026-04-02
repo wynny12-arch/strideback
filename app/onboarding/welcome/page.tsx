@@ -7,6 +7,7 @@ const SB_KEYS = [
   'sb_onboarding', 'sb_plan', 'sb_completed_days',
   'sb_checkin_history', 'sb_checkin_latest',
   'sb_safety_review', 'sb_medical_updates',
+  'sb_activity_log', 'sb_coach_history',
 ]
 
 function resetApp() {
@@ -23,15 +24,15 @@ export default function WelcomePage() {
         </div>
 
         <h1 className="text-4xl font-bold text-sb-primary mb-2 tracking-tight">StrideBack</h1>
-        <p className="text-sb-primary-mid font-semibold text-lg mb-8">Your AI-guided rehab coach</p>
+        <p className="text-sb-primary-mid font-semibold text-lg mb-8">Your AI running coach</p>
 
         <p className="text-[#555] text-base leading-relaxed mb-12 max-w-xs">
-          Tell us about your injury and training history. We&apos;ll build a structured, personalised
-          rehab plan to get you back running safely.
+          Rehab an injury, stay injury-free, or optimise your performance. Tell us about yourself
+          and we&apos;ll build a personalised plan around your goals.
         </p>
 
         <Link
-          href="/onboarding/profile"
+          href="/onboarding/goals"
           className="w-full h-12 flex items-center justify-center rounded-xl bg-sb-primary text-white text-base font-medium"
         >
           Get started

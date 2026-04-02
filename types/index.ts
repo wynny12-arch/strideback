@@ -12,6 +12,42 @@ export type AIConfidence = "low" | "moderate" | "high";
 export type WeeklyDecision = "progress" | "hold" | "deload" | "seek_clinician";
 export type InjuryCaseStatus = "active" | "paused" | "closed";
 
+// --- v2 types ---
+export type RunnerGoal = 'rehab' | 'prevention' | 'optimisation';
+export type RunnerTier = 'novice' | 'intermediate' | 'advanced' | 'semi_elite';
+export type RaceDistance = '5k' | '10k' | 'half_marathon' | 'marathon' | 'ultra' | 'other';
+export type YearsRunning = 'less_than_1' | '1_to_3' | '3_to_7' | '7_plus';
+export type ActivityLogType = 'run' | 'cycle' | 'swim' | 'gym' | 'ski' | 'walk' | 'other';
+
+export interface RaceGoal {
+  distance: RaceDistance | null;
+  eventName: string | null;
+  date: string | null;
+  goalTime: string | null;
+}
+
+export interface ActivityLogEntry {
+  id: string;
+  date: string;                      // ISO date string
+  type: ActivityLogType;
+  durationMins: number | null;
+  distanceValue: string | null;
+  distanceUnit: 'miles' | 'km' | null;
+  pace: string | null;               // e.g. "7:30/mi"
+  avgHeartRate: number | null;
+  feel: number;                      // 1–10
+  notes: string | null;
+  source: 'manual' | 'upload';
+  imageDataUrl: string | null;       // base64 for uploaded Strava screenshots
+}
+
+export interface CoachMessage {
+  id: string;
+  role: 'user' | 'coach';
+  content: string;
+  timestamp: string;                 // ISO string
+}
+
 export type MedicalUpdateType = 'physio_visit' | 'new_symptom' | 'scan_result' | 'medication' | 'other'
 
 export interface MedicalUpdate {
@@ -121,13 +157,18 @@ export interface RehabPlan {
   phase: string;
   planGoal: string;
   aiConfidence: AIConfidence;
+  runnerTier?: RunnerTier;
+  runnerGoals?: RunnerGoal[];
   runningAllowance: RunningAllowance;
   strengthSessions: StrengthSession[];
+  preventionWork?: string[];         // prehab/stability exercises for prevention goal
+  optimisationWork?: string[];       // performance exercises for optimisation goal
   mobilityRecovery: string[];
   educationNotes: string[];
   progressionRules: string[];
   stopOrEscalateRules: string[];
   reviewInDays: number;
+  checkinFrequencyDays?: number;     // how often to check in, based on tier
   warnings: string[];
   active?: boolean;
   createdAt?: string;
@@ -188,19 +229,33 @@ export interface DashboardData {
   weeklyReviewDue: boolean;
 }
 
-// Onboarding form state collected across screens 1-5
+// Onboarding form state collected across screens
 export interface OnboardingFormData {
-  // Screen 2: Profile
+  // Goals screen
+  goals: RunnerGoal[];
+  // Profile screen
   firstName: string;
   age: number | null;
   activityType: ActivityType | null;
   experienceLevel: ExperienceLevel | null;
   weeklyTrainingLoad: TrainingLoad | null;
-  mainGoal: MainGoal | null;
+  mainGoal: MainGoal | null;           // legacy — kept for backwards compat
   previousInjuries: string[];
-  // Screen 3: Injury Area
+  // Performance profile (v2)
+  yearsRunning: YearsRunning | null;
+  marathonPb: string | null;           // e.g. "3:45:00" or null
+  fiveKPb: string | null;              // e.g. "22:30" or null
+  // Race goal (structured, v2)
+  raceGoal: RaceGoal | null;
+  // Running profile (optional)
+  weeklyMileage: string | null;
+  distanceUnit: 'miles' | 'km';
+  longestRecentRun: string | null;
+  surface: 'road' | 'trail' | 'mixed' | 'treadmill' | null;
+  typicalPace: string | null;
+  trainingPlan: string | null;
+  // Injury screens (only populated if goals includes 'rehab')
   region: InjuryRegion | null;
-  // Screen 4: Symptoms
   onsetDate: string;
   hasDiagnosis: "yes" | "no" | "not_sure";
   diagnosisName: string;
@@ -209,7 +264,6 @@ export interface OnboardingFormData {
   aggravatingFactors: string[];
   currentTolerance: string;
   additionalNotes: string;
-  // Screen 5: Clinical Notes
   pastedNotes: string;
   uploadedFileName: string | null;
 }
