@@ -2,32 +2,42 @@ import { NextResponse } from 'next/server'
 
 export const maxDuration = 60
 
-const SYSTEM_PROMPT = `You are an expert musculoskeletal physiotherapist specialising in running injury rehabilitation.
-You review a patient's completed week of rehab and generate their next personalised weekly plan.
+const SYSTEM_PROMPT = `You are an expert sports physiotherapist and running coach managing a runner's multi-phase journey.
 
-Your decision must be based strictly on the check-in data provided:
-- PROGRESS load if: pain during exercise averaged ≤ 3/10, next-morning stiffness averaged ≤ 4/10, and confidence was "Felt good" or "Easy" on majority of sessions
-- HOLD at current load if: pain averaged 3–5/10, or stiffness averaged 4–6/10, or confidence was mostly "Managed"
-- REGRESS load if: pain averaged > 5/10, stiffness averaged > 6/10, or confidence was mostly "Struggled", or fewer than 2 sessions completed
+Each week you review their check-in data and generate the next week's plan. You also decide whether to advance their journey to the next phase.
 
-Progression rules:
-- Progress: increase sets by 1 OR increase reps by 2 OR slow tempo by 1 second — not all three at once
-- Hold: same exercises, same load, different session ordering or warmup variation
-- Regress: reduce sets by 1 OR reduce reps by 2 OR reduce tempo demand
+PHASE PROGRESSION RULES:
+The runner has selected goals (e.g. rehab, prevention, optimisation). activePhases tracks which are currently live.
 
-EVERY exercise in EVERY session must directly target or rehabilitate the injured area stated. Do not include exercises for unrelated body regions.
+To unlock 'prevention' (add it to activePhases):
+- Average pain during sessions ≤ 3/10 for this week
+- Average next-morning stiffness ≤ 4/10
+- Confidence was "Felt good" or "Easy" on majority of sessions
+- At least 2 sessions completed
+
+To unlock 'optimisation' (add it to activePhases):
+- Prevention must already be active
+- Average pain ≤ 2/10
+- Confidence was "Easy" on majority of sessions
+
+If conditions are not met, keep activePhases unchanged.
+
+LOAD PROGRESSION (for rehab sessions):
+- PROGRESS: pain ≤ 3/10 avg, stiffness ≤ 4/10 avg, confidence mostly good/easy
+- HOLD: pain 3–5/10 avg, or stiffness 4–6/10, or confidence mostly "Managed"
+- REGRESS: pain > 5/10, stiffness > 6/10, or confidence mostly "Struggled", or < 2 sessions done
+
+Exercise progression:
+- Progress: increase sets by 1 OR reps by 2 OR slow tempo — not all at once
+- Hold: same load, vary order or warm-up
+- Regress: reduce sets by 1 OR reps by 2
 
 Pain rules:
-- Pain ≤ 3/10 during exercise = acceptable
-- Pain 4/10 = stop the set, reduce load
-- Pain > 4/10 = stop the exercise entirely
-- Next-morning stiffness > 5/10 = reduce load at next session
+- ≤ 3/10 = acceptable · 4/10 = stop set · > 4/10 = stop exercise
+- Next-morning stiffness > 5/10 = reduce load
 
-Running allowance: only allow running if current pain score ≤ 4/10 AND current tolerance is "can_jog" or "can_run".
-
-Keep ALL string values concise — 15 words or fewer. Arrays should contain the minimum items specified, no more.
-
-Return ONLY a single valid JSON object. No markdown, no explanation, no code fences — raw JSON only.`
+Keep ALL string values concise — 15 words or fewer.
+Return ONLY a single valid JSON object. No markdown, no code fences.`
 
 function summariseCheckIns(checkIns: Record<string, unknown>[]): string {
   if (!checkIns.length) return 'No check-in data recorded.'
@@ -40,14 +50,23 @@ function summariseCheckIns(checkIns: Record<string, unknown>[]): string {
     `Session ${i + 1}: ${confLabels[Number(c.confidenceScore)] ?? 'Unknown'}`
   ).join(', ')
   const notes = checkIns.filter(c => c.freeTextNotes).map(c => c.freeTextNotes).join(' | ')
+  const sleepSummary = checkIns.some(c => c.sleepQuality)
+    ? `\nAvg sleep quality: ${avg('sleepQuality')}/4`
+    : ''
+  const energySummary = checkIns.some(c => c.energyLevel)
+    ? `\nAvg energy: ${avg('energyLevel')}/4`
+    : ''
+  const hrvSummary = checkIns.some(c => c.hrv)
+    ? `\nHRV readings: ${checkIns.map(c => c.hrv ?? '—').join(', ')}`
+    : ''
 
-  return `Sessions completed: ${checkIns.length}/3
+  return `Sessions completed: ${checkIns.length}
 Average pain before: ${avg('painBefore')}/10
 Average pain during: ${avg('painDuring')}/10
 Average pain after: ${avg('painAfter')}/10
 Average next-morning stiffness: ${avg('nextDayStiffness')}/10
-Confidence per session: ${confSummary}
-${notes ? `Patient notes: ${notes}` : ''}`
+Confidence: ${confSummary}${sleepSummary}${energySummary}${hrvSummary}
+${notes ? `Notes: ${notes}` : ''}`
 }
 
 function summarisePreviousPlan(plan: Record<string, unknown>): string {
@@ -55,13 +74,14 @@ function summarisePreviousPlan(plan: Record<string, unknown>): string {
   const exerciseSummary = sessions.map((s: Record<string, unknown>, i: number) => {
     const exercises = Array.isArray(s.exercises) ? s.exercises : []
     const exList = exercises.map((e: Record<string, unknown>) =>
-      `${e.name} — ${e.sets} sets × ${e.reps}, tempo: ${e.tempo}`
+      `${e.name} — ${e.sets} sets × ${e.reps}`
     ).join('; ')
     return `Day ${i + 1}: ${exList}`
   }).join('\n')
-
   return `Phase: ${plan.phase}
 Goal: ${plan.planGoal}
+Active phases: ${JSON.stringify(plan.activePhases ?? [])}
+All selected goals: ${JSON.stringify(plan.runnerGoals ?? [])}
 ${exerciseSummary}`
 }
 
@@ -85,71 +105,113 @@ export async function POST(req: Request) {
     medicalUpdates: Record<string, string>[]
   }
 
-  const { region, firstName, age, experienceLevel, mainGoal, currentTolerance, targetEvent, targetEventDate } = onboarding ?? {}
+  const {
+    firstName, age, experienceLevel, weeklyTrainingLoad,
+    region, currentTolerance, yearsRunning, marathonPb, fiveKPb, raceGoal,
+  } = onboarding ?? {}
+
+  const currentActivePhases: string[] = Array.isArray(previousPlan?.activePhases)
+    ? previousPlan.activePhases as string[]
+    : []
+  const allGoals: string[] = Array.isArray(previousPlan?.runnerGoals)
+    ? previousPlan.runnerGoals as string[]
+    : []
+  const hasRehab = allGoals.includes('rehab')
+  const hasPrevention = allGoals.includes('prevention')
+  const hasOptimisation = allGoals.includes('optimisation')
 
   const updatesText = Array.isArray(medicalUpdates) && medicalUpdates.length > 0
     ? medicalUpdates.map(u => `[${u.type}] ${u.text}`).join('\n')
     : 'None'
 
-  const prompt = `Review this patient's completed week and generate their next personalised rehabilitation plan.
+  const raceGoalObj = raceGoal as Record<string, string | null> | null
+  const raceGoalText = raceGoalObj?.distance
+    ? `${raceGoalObj.distance}${raceGoalObj.goalTime ? `, goal: ${raceGoalObj.goalTime}` : ''}`
+    : 'None'
 
-PATIENT: ${firstName}, Age: ${age}, Experience: ${experienceLevel}, Goal: ${mainGoal}
-INJURED AREA (all exercises must target this): ${region}
-CURRENT TOLERANCE: ${currentTolerance}
-TARGET EVENT: ${targetEvent ? `${targetEvent}${targetEventDate ? ` on ${targetEventDate}` : ''}` : 'None'}
+  const goalInstructions = [
+    hasRehab ? '- REHAB: include 3 strengthSessions targeting the injured area' : '- No rehab: strengthSessions = []',
+    hasPrevention ? '- PREVENTION goal selected' : '',
+    hasOptimisation ? '- OPTIMISATION goal selected' : '',
+  ].filter(Boolean).join('\n')
 
-PREVIOUS WEEK'S PLAN:
+  const prompt = `Review this runner's week and generate their next plan. Decide whether to advance their journey.
+
+RUNNER: ${firstName}, Age: ${age}, Experience: ${experienceLevel}, Weekly load: ${weeklyTrainingLoad}
+Years running: ${yearsRunning ?? 'Unknown'} · Marathon PB: ${marathonPb ?? 'None'} · 5k PB: ${fiveKPb ?? 'None'}
+Race goal: ${raceGoalText}
+${hasRehab ? `Injured area: ${region}\nCurrent tolerance: ${currentTolerance}` : ''}
+Tier: ${previousPlan?.runnerTier ?? 'Unknown'}
+
+SELECTED GOALS: ${allGoals.join(', ')}
+CURRENTLY ACTIVE PHASES: ${currentActivePhases.join(', ')}
+(Only expand activePhases if progression criteria are met)
+
+${goalInstructions}
+
+PREVIOUS PLAN:
 ${summarisePreviousPlan(previousPlan ?? {})}
 
-THIS WEEK'S CHECK-IN DATA:
+CHECK-IN DATA:
 ${summariseCheckIns(checkIns ?? [])}
 
 MEDICAL UPDATES:
 ${updatesText}
 
-Based on the check-in data, decide whether to PROGRESS, HOLD, or REGRESS the plan. Explain your decision clearly in the decisionReason field.
+Assess the data. Decide PROGRESS / HOLD / REGRESS for rehab sessions.
+Decide whether to expand activePhases (add prevention or optimisation) based on the rules.
+If a new phase is unlocked, set phaseUnlocked to that phase name and write a phaseUnlockedMessage explaining it.
 
-Return a JSON object with EXACTLY this structure (all fields required):
+Return JSON with EXACTLY this structure:
 {
+  "runnerTier": ${JSON.stringify(previousPlan?.runnerTier ?? 'intermediate')},
+  "runnerGoals": ${JSON.stringify(allGoals)},
+  "activePhases": ["rehab"] or expanded array if criteria met,
+  "phaseUnlocked": null or "prevention" or "optimisation",
+  "phaseUnlockedMessage": null or "1-2 sentence message to the runner celebrating the phase unlock and explaining what's new",
+  "checkinFrequencyDays": ${previousPlan?.checkinFrequencyDays ?? 7},
   "phase": "Phase name — e.g. Progressive Loading — Week 2",
-  "planGoal": "1 sentence describing this week's rehabilitation goal",
+  "planGoal": "1 sentence goal for this week",
   "progressionDecision": "progress" | "hold" | "regress",
-  "decisionReason": "1-2 sentences explaining why based on the check-in data",
+  "decisionReason": "1-2 sentences explaining why, referencing the data",
   "aiConfidence": "high" | "moderate" | "low",
   "runningAllowance": {
     "allowed": true | false,
-    "guidance": "1-2 sentences on running guidance this week",
+    "guidance": "1-2 sentences",
     "protocol": ["step 1", "step 2", "step 3"]
   },
   "strengthSessions": [
     {
       "day": "Day 1",
-      "focus": "Short description of this session's focus",
-      "warmUp": ["warm-up step 1", "warm-up step 2"],
+      "focus": "session focus",
+      "warmUp": ["step 1", "step 2"],
       "exercises": [
         {
           "name": "Exercise name",
           "sets": 3,
-          "reps": "e.g. 10 reps or 5 × 45-second holds",
-          "tempo": "e.g. 2 seconds up, 1 second hold, 2 seconds down",
-          "painRule": "Specific pain threshold instruction for this exercise",
-          "reason": "1 sentence explaining why this exercise is included",
-          "instructions": ["step 1", "step 2", "step 3", "step 4"]
+          "reps": "10 reps",
+          "tempo": "2-1-2",
+          "painRule": "Stop if pain > 3/10",
+          "reason": "why this exercise",
+          "instructions": ["step 1", "step 2", "step 3"]
         }
       ]
-    },
-    { "day": "Day 3", "focus": "...", "warmUp": [...], "exercises": [...] },
-    { "day": "Day 5", "focus": "...", "warmUp": [...], "exercises": [...] }
+    }
   ],
+  "preventionWork": [] or 4-6 items if prevention is active,
+  "optimisationWork": [] or 4-6 items if optimisation is active,
   "mobilityRecovery": ["item 1", "item 2", "item 3"],
   "educationNotes": ["note 1", "note 2"],
   "progressionRules": ["rule 1", "rule 2"],
   "stopOrEscalateRules": ["rule 1", "rule 2"],
   "reviewInDays": 7,
-  "warnings": ["warning 1"]
+  "warnings": []
 }
 
-Include 3 exercises per session.`
+If rehab is active: 3 strengthSessions with 3 exercises each targeting ${region ?? 'the injured area'}.
+If rehab is not active: strengthSessions = [].
+If prevention is active (in new activePhases): preventionWork = 4-6 prehab/stability exercises.
+If optimisation is active: optimisationWork = 4-6 performance exercises.`
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {

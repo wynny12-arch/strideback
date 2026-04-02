@@ -158,11 +158,13 @@ export interface RehabPlan {
   planGoal: string;
   aiConfidence: AIConfidence;
   runnerTier?: RunnerTier;
-  runnerGoals?: RunnerGoal[];
+  runnerGoals?: RunnerGoal[];        // all goals the runner selected
+  activePhases?: RunnerGoal[];       // phases currently active — expands week by week
+  phaseUnlocked?: RunnerGoal;        // set when a new phase was just unlocked this review
   runningAllowance: RunningAllowance;
   strengthSessions: StrengthSession[];
-  preventionWork?: string[];         // prehab/stability exercises for prevention goal
-  optimisationWork?: string[];       // performance exercises for optimisation goal
+  preventionWork?: string[];         // prehab/stability exercises (shown when prevention is active)
+  optimisationWork?: string[];       // performance exercises (shown when optimisation is active)
   mobilityRecovery: string[];
   educationNotes: string[];
   progressionRules: string[];

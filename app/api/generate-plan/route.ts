@@ -198,6 +198,15 @@ export async function POST(req: Request) {
     }
 
     const plan = JSON.parse(jsonMatch[0])
+
+    // Set activePhases: rehab always starts first; prevention/optimisation unlock via weekly review
+    const goalsInPlan: string[] = Array.isArray(plan.runnerGoals) ? plan.runnerGoals : []
+    if (goalsInPlan.includes('rehab')) {
+      plan.activePhases = ['rehab']
+    } else {
+      plan.activePhases = goalsInPlan // no rehab — all selected goals are active from day 1
+    }
+
     return NextResponse.json(plan)
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Unknown error'

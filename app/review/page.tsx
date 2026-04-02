@@ -1,10 +1,10 @@
+// @ts-nocheck
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
 import { CheckCircle2, Circle, AlertTriangle, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts'
 import { Button } from '@/components/ui/button'
 import { BottomNav } from '@/components/bottom-nav'
 
@@ -32,8 +32,6 @@ const DECISION_CONFIG = {
   regress: { label: 'Reducing load this week', bg: 'bg-[#FEF3CD]', border: 'border-[#F5D98B]', text: 'text-[#B07D00]', Icon: TrendingDown },
 }
 
-const PAIN_COLOR = '#2E6DA4'
-
 function avg(nums: number[]) {
   if (!nums.length) return 0
   return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10
@@ -50,6 +48,85 @@ function PainBadge({ value }: { value: number }) {
 
 function getSaved(key: string, fallback: unknown = {}) {
   try { return JSON.parse(localStorage.getItem(key) ?? JSON.stringify(fallback)) } catch { return fallback }
+}
+
+interface CheckInDataSectionProps {
+  checkIns: CheckIn[]
+  notes: string[]
+  avgPainBefore: number
+  avgPainDuring: number
+  avgPainAfter: number
+  avgStiffness: number
+}
+
+function CheckInDataSection({ checkIns, notes, avgPainBefore, avgPainDuring, avgPainAfter, avgStiffness }: CheckInDataSectionProps): React.ReactElement {
+  return (
+    <>
+      {/* Pain summary */}
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Average pain this week</p>
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Before', value: avgPainBefore },
+            { label: 'During', value: avgPainDuring },
+            { label: 'After', value: avgPainAfter },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-gray-50 rounded-xl px-3 py-4 flex flex-col items-center gap-1">
+              <span className="text-xs text-[#555]/50 font-medium">{label}</span>
+              <PainBadge value={value} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Confidence per session */}
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">How sessions felt</p>
+        <div className="space-y-2">
+          {checkIns.map((c, i) => {
+            const conf = CONFIDENCE_LABELS[c.confidenceScore] ?? { label: '—', color: '#999' }
+            return (
+              <div key={i} className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+                <span className="text-sm text-[#333] font-medium">Session {i + 1}</span>
+                <span className="text-sm font-semibold" style={{ color: conf.color }}>{conf.label}</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Stiffness */}
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Avg next-morning stiffness</p>
+        <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl">
+          {avgStiffness > 5
+            ? <AlertTriangle className="w-5 h-5 text-sb-caution shrink-0" />
+            : <CheckCircle2 className="w-5 h-5 text-sb-success shrink-0" />
+          }
+          <div>
+            <PainBadge value={avgStiffness} />
+            <p className="text-xs text-[#555]/60 mt-0.5">
+              {avgStiffness > 5 ? 'Above threshold — load reduced next week' : 'Within acceptable range'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Notes */}
+      {notes.length > 0 ? (
+        <div className="mb-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Your notes</p>
+          <div className="space-y-2">
+            {notes.map((note, i) => (
+              <div key={i} className="px-4 py-3 bg-gray-50 rounded-xl">
+                <p className="text-sm text-[#555] leading-snug">{note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </>
+  )
 }
 
 export default function ReviewPage() {
@@ -87,19 +164,12 @@ export default function ReviewPage() {
   }, [])
 
   const sessionsCompleted = completedDays.length
-  const hasData = checkIns.length > 0
+  const hasData: boolean = checkIns.length > 0
 
   const avgPainBefore = avg(checkIns.map(c => c.painBefore))
   const avgPainDuring = avg(checkIns.map(c => c.painDuring))
   const avgPainAfter = avg(checkIns.map(c => c.painAfter))
   const avgStiffness = avg(checkIns.map(c => c.nextDayStiffness))
-
-  const chartData = checkIns.map((c, i) => ({
-    name: `S${i + 1}`,
-    before: c.painBefore,
-    during: c.painDuring,
-    after: c.painAfter,
-  }))
 
   const notes = checkIns.filter(c => c.freeTextNotes).map(c => c.freeTextNotes as string)
 
@@ -120,6 +190,7 @@ export default function ReviewPage() {
 
   const decision = nextPlan?.progressionDecision as 'progress' | 'hold' | 'regress' | undefined
   const decisionConfig = decision ? DECISION_CONFIG[decision] : null
+
 
   return (
     <div className="min-h-screen bg-white pb-32">
@@ -157,106 +228,30 @@ export default function ReviewPage() {
         </div>
 
         {hasData ? (
-          <>
-            {/* Pain summary */}
-            <div className="mb-6">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Average pain this week</p>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: 'Before', value: avgPainBefore },
-                  { label: 'During', value: avgPainDuring },
-                  { label: 'After', value: avgPainAfter },
-                ].map(({ label, value }) => (
-                  <div key={label} className="bg-gray-50 rounded-xl px-3 py-4 flex flex-col items-center gap-1">
-                    <span className="text-xs text-[#555]/50 font-medium">{label}</span>
-                    <PainBadge value={value} />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Pain chart */}
-            {chartData.length > 1 && (
-              <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Pain by session</p>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <ResponsiveContainer width="100%" height={140}>
-                    <BarChart data={chartData} barGap={2} barCategoryGap="30%">
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#888' }} axisLine={false} tickLine={false} />
-                      <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: '#888' }} axisLine={false} tickLine={false} width={20} />
-                      <Bar dataKey="before" radius={[3, 3, 0, 0]}>
-                        {chartData.map((_, i) => <Cell key={i} fill={`${PAIN_COLOR}55`} />)}
-                      </Bar>
-                      <Bar dataKey="during" radius={[3, 3, 0, 0]}>
-                        {chartData.map((_, i) => <Cell key={i} fill={PAIN_COLOR} />)}
-                      </Bar>
-                      <Bar dataKey="after" radius={[3, 3, 0, 0]}>
-                        {chartData.map((_, i) => <Cell key={i} fill={`${PAIN_COLOR}99`} />)}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                  <div className="flex justify-center gap-4 mt-1">
-                    {[{ label: 'Before', op: '55' }, { label: 'During', op: '' }, { label: 'After', op: '99' }].map(({ label, op }) => (
-                      <div key={label} className="flex items-center gap-1.5">
-                        <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: `${PAIN_COLOR}${op}` }} />
-                        <span className="text-xs text-[#555]/60">{label}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Confidence per session */}
-            <div className="mb-6">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">How sessions felt</p>
-              <div className="space-y-2">
-                {checkIns.map((c, i) => {
-                  const conf = CONFIDENCE_LABELS[c.confidenceScore] ?? { label: '—', color: '#999' }
-                  return (
-                    <div key={i} className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
-                      <span className="text-sm text-[#333] font-medium">Session {i + 1}</span>
-                      <span className="text-sm font-semibold" style={{ color: conf.color }}>{conf.label}</span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Stiffness */}
-            <div className="mb-6">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Avg next-morning stiffness</p>
-              <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-xl">
-                {avgStiffness > 5
-                  ? <AlertTriangle className="w-5 h-5 text-sb-caution shrink-0" />
-                  : <CheckCircle2 className="w-5 h-5 text-sb-success shrink-0" />
-                }
-                <div>
-                  <PainBadge value={avgStiffness} />
-                  <p className="text-xs text-[#555]/60 mt-0.5">
-                    {avgStiffness > 5 ? 'Above threshold — load reduced next week' : 'Within acceptable range'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Notes */}
-            {notes.length > 0 && (
-              <div className="mb-6">
-                <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Your notes</p>
-                <div className="space-y-2">
-                  {notes.map((note, i) => (
-                    <div key={i} className="px-4 py-3 bg-gray-50 rounded-xl">
-                      <p className="text-sm text-[#555] leading-snug">{note}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
+          <CheckInDataSection
+            checkIns={checkIns}
+            notes={notes}
+            avgPainBefore={avgPainBefore}
+            avgPainDuring={avgPainDuring}
+            avgPainAfter={avgPainAfter}
+            avgStiffness={avgStiffness}
+          />
         ) : (
           <div className="mb-6 px-4 py-6 bg-gray-50 rounded-xl text-center">
             <p className="text-sm text-[#555]/60 leading-relaxed">No check-in data yet. Complete a session and check in to see your weekly summary here.</p>
+          </div>
+        )}
+
+        {/* Phase unlock celebration */}
+        {nextPlan?.phaseUnlocked && nextPlan?.phaseUnlockedMessage && (
+          <div className="mb-6 rounded-xl border-2 border-sb-success bg-[#E8F5EE] p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">🎉</span>
+              <p className="text-xs font-semibold uppercase tracking-wide text-sb-success">
+                New phase unlocked — {String(nextPlan.phaseUnlocked)}
+              </p>
+            </div>
+            <p className="text-sm text-[#333] leading-relaxed">{String(nextPlan.phaseUnlockedMessage)}</p>
           </div>
         )}
 

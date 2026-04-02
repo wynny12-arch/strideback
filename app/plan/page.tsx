@@ -116,14 +116,18 @@ export default function PlanPage() {
   }, [])
 
   const goals = plan.runnerGoals ?? []
+  const activePhases = plan.activePhases ?? (goals.includes('rehab') ? ['rehab'] : goals)
   const hasRehab = goals.includes('rehab')
   const tierConfig = plan.runnerTier ? TIER_CONFIG[plan.runnerTier] : null
+
+  const preventionActive = activePhases.includes('prevention')
+  const optimisationActive = activePhases.includes('optimisation')
 
   // Determine phase status for each goal
   function phaseStatus(goal: RunnerGoal): 'active' | 'next' | 'not-selected' {
     if (!goals.includes(goal)) return 'not-selected'
-    if (hasRehab && goal !== 'rehab') return 'next'
-    return 'active'
+    if (activePhases.includes(goal)) return 'active'
+    return 'next'
   }
 
   return (
@@ -326,6 +330,44 @@ export default function PlanPage() {
                 Start weekly review <ChevronDown className="w-3 h-3 -rotate-90" />
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Prevention work — shown only when prevention phase is active */}
+        {preventionActive && plan.preventionWork && plan.preventionWork.length > 0 && (
+          <div className="py-6 border-b border-gray-100">
+            <div className="flex items-center gap-2 mb-1">
+              <Shield className="w-4 h-4 text-sb-success" />
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50">Injury prevention</p>
+            </div>
+            <p className="text-xs text-sb-success font-semibold mb-3">Now active</p>
+            <ul className="space-y-2">
+              {plan.preventionWork.map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-[#555] leading-snug">
+                  <span className="text-sb-success shrink-0 mt-0.5">·</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Optimisation work — shown only when optimisation phase is active */}
+        {optimisationActive && plan.optimisationWork && plan.optimisationWork.length > 0 && (
+          <div className="py-6 border-b border-gray-100">
+            <div className="flex items-center gap-2 mb-1">
+              <Zap className="w-4 h-4 text-sb-primary-mid" />
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50">Performance</p>
+            </div>
+            <p className="text-xs text-sb-primary-mid font-semibold mb-3">Now active</p>
+            <ul className="space-y-2">
+              {plan.optimisationWork.map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-[#555] leading-snug">
+                  <span className="text-sb-primary-mid shrink-0 mt-0.5">·</span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

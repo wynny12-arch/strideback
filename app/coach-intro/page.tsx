@@ -206,6 +206,31 @@ export default function CoachIntroPage() {
           </div>
         )}
 
+        {/* How I control the journey */}
+        {activeGoals.length > 1 && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">How I advance your journey</p>
+            <div className="bg-sb-primary-light/60 rounded-2xl px-4 py-4 space-y-3">
+              <p className="text-sm text-[#333] leading-relaxed font-medium">
+                You don&apos;t decide when to move to the next phase — I do, based on your data.
+              </p>
+              <div className="space-y-2.5">
+                {[
+                  { icon: '📊', text: `I monitor your pain scores, confidence, and ${activeGoals.some(g => g.goal === 'prevention' || g.goal === 'optimisation') ? 'sleep, energy, and HRV ' : ''}data from every check-in.` },
+                  { icon: '🛡', text: `When your rehab is progressing well — pain consistently low, sessions feeling manageable — I'll start weaving in ${hasRehab && activeGoals.some(g => g.goal === 'prevention') ? 'injury prevention work' : 'the next phase'}.` },
+                  { icon: '⚡', text: `Once prevention is established, I'll layer in performance work. Each phase builds on the last.` },
+                  { icon: '🔔', text: `You'll get a notification at your weekly review when a new phase unlocks. Your plan updates automatically.` },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <span className="text-base shrink-0 mt-0.5">{item.icon}</span>
+                    <p className="text-sm text-[#555] leading-relaxed">{item.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* How I work */}
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">How I work</p>
