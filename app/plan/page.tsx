@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
-import { CheckCircle2, XCircle, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, StopCircle, Shield, Zap, HeartPulse } from 'lucide-react'
+import { CheckCircle2, XCircle, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, StopCircle, HeartPulse, Shield, Zap } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
 import planMock from '@/mocks/rehab-plan.json'
 import type { RehabPlan, RunnerTier, RunnerGoal } from '@/types'
@@ -117,8 +117,6 @@ export default function PlanPage() {
 
   const goals = plan.runnerGoals ?? []
   const hasRehab = goals.includes('rehab')
-  const hasPrevention = goals.includes('prevention')
-  const hasOptimisation = goals.includes('optimisation')
   const tierConfig = plan.runnerTier ? TIER_CONFIG[plan.runnerTier] : null
 
   // Determine phase status for each goal
@@ -208,7 +206,7 @@ export default function PlanPage() {
             <div className="mt-4 flex items-start gap-2 bg-white rounded-xl px-4 py-3 border border-gray-100">
               <span className="text-base mt-0.5">💡</span>
               <p className="text-xs text-[#555] leading-relaxed">
-                Rehab comes first. {hasPrevention ? 'Prevention' : ''}{hasPrevention && hasOptimisation ? ' and performance' : hasOptimisation ? 'Performance' : ''} work will be woven in progressively as your recovery advances.
+                Rehab comes first. Other phases will be woven in progressively as your recovery advances.
               </p>
             </div>
           )}
@@ -328,42 +326,6 @@ export default function PlanPage() {
                 Start weekly review <ChevronDown className="w-3 h-3 -rotate-90" />
               </button>
             </div>
-          </div>
-        )}
-
-        {/* Prevention work */}
-        {hasPrevention && plan.preventionWork && plan.preventionWork.length > 0 && (
-          <div className="py-6 border-b border-gray-100">
-            <div className="flex items-center gap-2 mb-4">
-              <Shield className="w-4 h-4 text-sb-success" />
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50">Injury prevention</p>
-            </div>
-            <ul className="space-y-2">
-              {plan.preventionWork.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-[#555] leading-snug">
-                  <span className="text-sb-success shrink-0 mt-0.5">·</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Optimisation work */}
-        {hasOptimisation && plan.optimisationWork && plan.optimisationWork.length > 0 && (
-          <div className="py-6 border-b border-gray-100">
-            <div className="flex items-center gap-2 mb-4">
-              <Zap className="w-4 h-4 text-sb-primary-mid" />
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50">Performance</p>
-            </div>
-            <ul className="space-y-2">
-              {plan.optimisationWork.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-[#555] leading-snug">
-                  <span className="text-sb-primary-mid shrink-0 mt-0.5">·</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
           </div>
         )}
 

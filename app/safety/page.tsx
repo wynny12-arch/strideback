@@ -198,7 +198,7 @@ export default function SafetyPage() {
     }
   }, [safetyData, router])
 
-  const handleContinue = () => generateAndContinue('/plan')
+  const handleContinue = () => generateAndContinue('/coach-intro')
   const handleSaveAndReturn = () => generateAndContinue('/')
 
   if (safetyData.status === 'red') {
