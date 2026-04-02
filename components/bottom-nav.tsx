@@ -3,12 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useEffect } from 'react'
-import { ClipboardList, Dumbbell, TrendingUp, RotateCcw, Settings2 } from 'lucide-react'
+import { ClipboardList, Dumbbell, MessageCircle, RotateCcw, Settings2 } from 'lucide-react'
 
 const TABS = [
   { label: 'Plan', href: '/plan', icon: ClipboardList },
   { label: 'Today', href: '/session', icon: Dumbbell },
-  { label: 'Progress', href: '/dashboard', icon: TrendingUp },
+  { label: 'Coach', href: '/coach', icon: MessageCircle },
   { label: 'Review', href: '/review', icon: RotateCcw },
   { label: 'Manage', href: '/manage', icon: Settings2 },
 ]

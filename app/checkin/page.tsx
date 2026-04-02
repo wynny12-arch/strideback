@@ -7,7 +7,7 @@ import { Slider } from '@/components/ui/slider'
 import { Button } from '@/components/ui/button'
 import { BottomNav } from '@/components/bottom-nav'
 import planMock from '@/mocks/rehab-plan.json'
-import type { RehabPlan } from '@/types'
+import type { RehabPlan, RunnerTier } from '@/types'
 
 function getStoredPlan(): RehabPlan {
   try {
@@ -17,17 +17,38 @@ function getStoredPlan(): RehabPlan {
   return planMock as RehabPlan
 }
 
-const plan = getStoredPlan()
-const runningAllowed = plan.runningAllowance.allowed
-
-const RUN_SESSION_OPTIONS = ['1', '2', '3+']
-
 const CONFIDENCE_OPTIONS = [
   { value: 1, label: 'Struggled', sub: 'Too hard' },
   { value: 2, label: 'Managed', sub: 'With difficulty' },
   { value: 3, label: 'Felt good', sub: 'Went well' },
   { value: 4, label: 'Easy', sub: 'Ready for more' },
 ]
+
+const SLEEP_OPTIONS = [
+  { value: 1, label: 'Poor', sub: '< 5 hrs' },
+  { value: 2, label: 'Fair', sub: '5–6 hrs' },
+  { value: 3, label: 'Good', sub: '7–8 hrs' },
+  { value: 4, label: 'Great', sub: '8+ hrs' },
+]
+
+const ENERGY_OPTIONS = [
+  { value: 1, label: 'Drained', sub: 'Very low' },
+  { value: 2, label: 'Low', sub: 'Below normal' },
+  { value: 3, label: 'Normal', sub: 'OK' },
+  { value: 4, label: 'High', sub: 'Energised' },
+]
+
+const LOAD_OPTIONS = [
+  { value: 'none', label: 'Rest' },
+  { value: 'light', label: 'Light' },
+  { value: 'moderate', label: 'Moderate' },
+  { value: 'high', label: 'High' },
+]
+
+function tierLevel(tier: RunnerTier | undefined): number {
+  const map: Record<RunnerTier, number> = { novice: 1, intermediate: 2, advanced: 3, semi_elite: 4 }
+  return tier ? map[tier] : 1
+}
 
 function PainSlider({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   return (
@@ -54,6 +75,40 @@ function PainSlider({ label, value, onChange }: { label: string; value: number; 
   )
 }
 
+function ButtonGrid<T extends string | number>({
+  options,
+  value,
+  onChange,
+  cols = 2,
+}: {
+  options: { value: T; label: string; sub?: string }[]
+  value: T | null
+  onChange: (v: T) => void
+  cols?: 2 | 4
+}) {
+  return (
+    <div className={`grid gap-2 ${cols === 4 ? 'grid-cols-4' : 'grid-cols-2'}`}>
+      {options.map(({ value: v, label, sub }) => {
+        const selected = value === v
+        return (
+          <button
+            key={String(v)}
+            type="button"
+            style={{ touchAction: 'manipulation' }}
+            onClick={() => onChange(v)}
+            className={`flex flex-col items-start px-3 py-3 rounded-xl border text-left ${
+              selected ? 'border-sb-primary-mid bg-sb-primary-mid' : 'border-gray-200 bg-white'
+            }`}
+          >
+            <p className={`text-sm font-semibold ${selected ? 'text-white' : 'text-[#333]'}`}>{label}</p>
+            {sub && <p className={`text-xs ${selected ? 'text-white/70' : 'text-[#555]/60'}`}>{sub}</p>}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function CheckInPage() {
   return (
     <Suspense>
@@ -68,6 +123,12 @@ function CheckInContent() {
   const searchParams = useSearchParams()
   const dayIndex = searchParams.get('day')
 
+  const plan = getStoredPlan()
+  const runningAllowed = plan.runningAllowance.allowed
+  const tier = plan.runnerTier
+  const level = tierLevel(tier)
+
+  // Base fields (all tiers)
   const [painBefore, setPainBefore] = useState(3)
   const [painDuring, setPainDuring] = useState(3)
   const [painAfter, setPainAfter] = useState(2)
@@ -78,10 +139,18 @@ function CheckInContent() {
   const [runSessions, setRunSessions] = useState<string | null>(null)
   const [runPain, setRunPain] = useState(2)
 
+  // Intermediate+ fields (level >= 2)
+  const [sleepQuality, setSleepQuality] = useState<number | null>(null)
+  const [energyLevel, setEnergyLevel] = useState<number | null>(null)
+
+  // Advanced+ fields (level >= 3)
+  const [hrv, setHrv] = useState('')
+  const [weeklyLoad, setWeeklyLoad] = useState<string | null>(null)
+
   const canSubmit = confidence !== null
 
   const handleSubmit = () => {
-    const checkIn = {
+    const checkIn: Record<string, unknown> = {
       painBefore,
       painDuring,
       painAfter,
@@ -95,8 +164,18 @@ function CheckInContent() {
       } : null,
       createdAt: new Date().toISOString(),
     }
-    localStorage.setItem('sb_checkin_latest', JSON.stringify(checkIn))
 
+    if (level >= 2) {
+      checkIn.sleepQuality = sleepQuality
+      checkIn.energyLevel = energyLevel
+    }
+
+    if (level >= 3) {
+      checkIn.hrv = hrv ? Number(hrv) : null
+      checkIn.weeklyTrainingLoad = weeklyLoad
+    }
+
+    localStorage.setItem('sb_checkin_latest', JSON.stringify(checkIn))
     const history = JSON.parse(localStorage.getItem('sb_checkin_history') ?? '[]')
     localStorage.setItem('sb_checkin_history', JSON.stringify([...history, checkIn]))
 
@@ -150,28 +229,45 @@ function CheckInContent() {
           </div>
         </div>
 
+        {/* Sleep & energy (intermediate+) */}
+        {level >= 2 && (
+          <>
+            <div className="mb-6">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Last night's sleep</p>
+              <ButtonGrid options={SLEEP_OPTIONS} value={sleepQuality} onChange={setSleepQuality} />
+            </div>
+            <div className="mb-6">
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Energy level today</p>
+              <ButtonGrid options={ENERGY_OPTIONS} value={energyLevel} onChange={setEnergyLevel} />
+            </div>
+          </>
+        )}
+
+        {/* HRV & weekly load (advanced+) */}
+        {level >= 3 && (
+          <div className="mb-6">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Training load & recovery</p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-[#333] mb-2">Morning HRV <span className="text-xs text-[#999]">(optional)</span></label>
+              <input
+                type="number"
+                value={hrv}
+                onChange={(e) => setHrv(e.target.value)}
+                placeholder="e.g. 62"
+                className="w-full h-11 border border-gray-200 rounded-xl px-4 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
+              />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[#333] mb-3">This week's training load</p>
+              <ButtonGrid options={LOAD_OPTIONS} value={weeklyLoad} onChange={setWeeklyLoad} cols={4} />
+            </div>
+          </div>
+        )}
+
         {/* Confidence */}
         <div className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">How did it feel overall?</p>
-          <div className="grid grid-cols-2 gap-2">
-            {CONFIDENCE_OPTIONS.map(({ value, label, sub }) => {
-              const selected = confidence === value
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  style={{ touchAction: 'manipulation' }}
-                  onClick={() => setConfidence(value)}
-                  className={`flex flex-col items-start px-3 py-3 rounded-xl border text-left ${
-                    selected ? 'border-sb-primary-mid bg-sb-primary-mid' : 'border-gray-200 bg-white'
-                  }`}
-                >
-                  <p className={`text-sm font-semibold ${selected ? 'text-white' : 'text-[#333]'}`}>{label}</p>
-                  <p className={`text-xs ${selected ? 'text-white/70' : 'text-[#555]/60'}`}>{sub}</p>
-                </button>
-              )
-            })}
-          </div>
+          <ButtonGrid options={CONFIDENCE_OPTIONS} value={confidence} onChange={setConfidence} />
         </div>
 
         {/* Running — only shown if running is allowed this week */}
@@ -201,7 +297,7 @@ function CheckInContent() {
               <>
                 <p className="text-sm font-medium text-[#333] mb-3">How many sessions?</p>
                 <div className="flex gap-2 mb-4">
-                  {RUN_SESSION_OPTIONS.map((opt) => {
+                  {['1', '2', '3+'].map((opt) => {
                     const selected = runSessions === opt
                     return (
                       <button
@@ -239,7 +335,7 @@ function CheckInContent() {
 
       <BottomNav />
 
-      {/* Fixed CTA — sits above bottom nav */}
+      {/* Fixed CTA */}
       <div className="fixed bottom-16 left-0 right-0 bg-white/90 backdrop-blur-sm border-t border-gray-100 px-6 py-4">
         <div className="w-full max-w-[480px] mx-auto">
           <Button

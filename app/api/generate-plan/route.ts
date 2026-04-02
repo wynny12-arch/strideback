@@ -1,39 +1,58 @@
 import { NextResponse } from 'next/server'
 
-export const maxDuration = 60 // seconds — requires Vercel Hobby allows up to 60s
+export const maxDuration = 60
 
-const SYSTEM_PROMPT = `You are an expert musculoskeletal physiotherapist specialising in running injury rehabilitation.
-You generate personalised, evidence-based weekly rehab plans for injured runners.
+const SYSTEM_PROMPT = `You are an expert sports physiotherapist and running coach who specialises in injury rehabilitation, injury prevention, and running performance optimisation.
 
-Your plans must be:
-- Clinically appropriate for the specific injury, pain level, and activity tolerance described
-- Structured with 3 sessions per week on non-consecutive days (Day 1, Day 3, Day 5)
-- Progressive but cautious — start conservatively, especially for higher pain scores
-- Written in plain English the user can follow at home without equipment
-- Specific about sets, reps, tempo, and pain thresholds
-- EVERY exercise in EVERY session must directly target or rehabilitate the injured area stated. Do not include exercises for unrelated body regions.
+You generate personalised, evidence-based weekly plans for runners. The plan must address ALL of the runner's selected goals.
 
-Pain rules:
+RUNNER TIER INFERENCE:
+Infer the runner's tier from their profile signals:
+- novice: < 1 year running, no race PBs, beginner experience
+- intermediate: 1–3 years running, occasional races, moderate experience
+- advanced: 3–7+ years, competitive experience, sub-20 5k or sub-3:45 marathon
+- semi_elite: 7+ years, marathon PB < 3:00:00 or 5k PB < 17:00, high weekly load
+
+Set checkinFrequencyDays based on tier:
+- novice: 7 (weekly)
+- intermediate: 3–4
+- advanced: 2–3
+- semi_elite: 1 (daily)
+
+GOALS:
+The plan must address each selected goal:
+- rehab: 3 strength sessions targeting the injured region, running allowance guidance
+- prevention: include preventionWork — 4–6 prehab/stability exercises to stay injury-free (do NOT duplicate rehab exercises)
+- optimisation: include optimisationWork — 4–6 performance exercises to improve running economy, power, speed (do NOT duplicate other sections)
+
+Pain rules (apply to rehab sessions only):
 - Pain ≤ 3/10 during exercise = acceptable
 - Pain 4/10 = stop the set, reduce load
 - Pain > 4/10 = stop the exercise entirely
 - Next-morning stiffness > 5/10 = reduce load at next session
 
-Running allowance: only allow running if current pain score ≤ 4/10 AND current tolerance is "can_jog" or "can_run".
-If pain score is > 6/10 or tolerance is "cannot_walk" or "can_walk", set allowed to false.
+Running allowance (rehab goal): only allow running if current pain ≤ 4/10 AND tolerance is "can_jog" or "can_run". If pain > 6/10 or tolerance is "cannot_walk"/"can_walk", set allowed to false.
+Non-rehab goals: set runningAllowance.allowed to true with guidance appropriate to tier/goals.
 
-Keep ALL string values concise — 15 words or fewer. Arrays should contain the minimum items specified, no more.
+Keep ALL string values concise — 15 words or fewer. Arrays should contain the minimum items specified.
 
 Return ONLY a single valid JSON object. No markdown, no explanation, no code fences — raw JSON only.`
 
 function buildPrompt(data: Record<string, unknown>): string {
   const {
-    firstName, age, experienceLevel, weeklyTrainingLoad, mainGoal,
-    otherActivities, trainingPlan, weeklyMileage, distanceUnit, longestRecentRun, surface,
-    typicalPace, targetEvent, targetEventDate, region, onsetDate, hasDiagnosis, diagnosisName,
+    firstName, age, experienceLevel, weeklyTrainingLoad,
+    otherActivities, trainingPlan, weeklyMileage, distanceUnit,
+    longestRecentRun, surface, typicalPace,
+    goals, yearsRunning, marathonPb, fiveKPb, raceGoal,
+    region, onsetDate, hasDiagnosis, diagnosisName,
     painScoreWorst, painScoreCurrent, aggravatingFactors, currentTolerance,
     pastedNotes, medicalUpdates,
   } = data
+
+  const goalsArr = Array.isArray(goals) ? goals as string[] : []
+  const hasRehab = goalsArr.includes('rehab')
+  const hasPrevention = goalsArr.includes('prevention')
+  const hasOptimisation = goalsArr.includes('optimisation')
 
   const diagnosisText = hasDiagnosis === 'yes' && diagnosisName
     ? `Confirmed diagnosis: ${diagnosisName}`
@@ -45,22 +64,13 @@ function buildPrompt(data: Record<string, unknown>): string {
     ? medicalUpdates.map((u: Record<string, string>) => `[${u.type}] ${u.text}`).join('\n')
     : 'None'
 
-  return `Generate a personalised 1-week running rehabilitation plan for this patient.
+  const raceGoalObj = raceGoal as Record<string, string | null> | null
+  const raceGoalText = raceGoalObj?.distance
+    ? `${raceGoalObj.distance}${raceGoalObj.eventName ? ` — ${raceGoalObj.eventName}` : ''}${raceGoalObj.date ? ` on ${raceGoalObj.date}` : ''}${raceGoalObj.goalTime ? `, goal time: ${raceGoalObj.goalTime}` : ''}`
+    : 'None'
 
-PATIENT PROFILE:
-- Name: ${firstName}, Age: ${age}
-- Running experience: ${experienceLevel}
-- Current weekly training load: ${weeklyTrainingLoad}
-- Main goal: ${mainGoal}
-- Other training: ${Array.isArray(otherActivities) && otherActivities.length > 0 ? otherActivities.join(', ') : 'None'}
-- Weekly distance: ${weeklyMileage ? `${weeklyMileage} ${distanceUnit ?? 'miles'}` : 'Not provided'}
-- Longest recent run: ${longestRecentRun ? `${longestRecentRun} ${distanceUnit ?? 'miles'}` : 'Not provided'}
-- Typical pace: ${typicalPace || 'Not provided'}
-- Preferred surface: ${surface || 'Not provided'}
-- Target event: ${targetEvent ? `${targetEvent}${targetEventDate ? ` on ${targetEventDate}` : ''}` : 'None'}
-- Training plan: ${trainingPlan || 'None provided'}
-
-INJURY DETAILS (all exercises must target this region specifically):
+  const injurySection = hasRehab ? `
+INJURY DETAILS (rehab sessions must target this region specifically):
 - Injured area: ${region}
 - Onset: ${onsetDate}
 - ${diagnosisText}
@@ -73,38 +83,64 @@ CLINICAL NOTES:
 ${pastedNotes || 'None provided'}
 
 MEDICAL UPDATES SINCE ONBOARDING:
-${updatesText}
+${updatesText}` : ''
+
+  const preventionNote = hasPrevention ? '\n- PREVENTION goal selected: include preventionWork array with 4–6 prehab/stability exercises.' : ''
+  const optimisationNote = hasOptimisation ? '\n- OPTIMISATION goal selected: include optimisationWork array with 4–6 performance/strength exercises.' : ''
+  const rehabNote = hasRehab ? '\n- REHAB goal selected: include 3 strengthSessions and runningAllowance.' : '\n- No rehab goal: set strengthSessions to [] and runningAllowance.allowed to true.'
+
+  return `Generate a personalised 1-week running plan for this runner. Goals: ${goalsArr.join(', ')}.
+${rehabNote}${preventionNote}${optimisationNote}
+
+RUNNER PROFILE:
+- Name: ${firstName}, Age: ${age}
+- Years running: ${yearsRunning || 'Not provided'}
+- Marathon PB: ${marathonPb || 'None / not applicable'}
+- 5k PB: ${fiveKPb || 'None / not applicable'}
+- Running experience: ${experienceLevel}
+- Current weekly training load: ${weeklyTrainingLoad}
+- Other training: ${Array.isArray(otherActivities) && otherActivities.length > 0 ? otherActivities.join(', ') : 'None'}
+- Weekly distance: ${weeklyMileage ? `${weeklyMileage} ${distanceUnit ?? 'miles'}` : 'Not provided'}
+- Longest recent run: ${longestRecentRun ? `${longestRecentRun} ${distanceUnit ?? 'miles'}` : 'Not provided'}
+- Typical pace: ${typicalPace || 'Not provided'}
+- Preferred surface: ${surface || 'Not provided'}
+- Race goal: ${raceGoalText}
+- Training plan: ${trainingPlan || 'None provided'}
+${injurySection}
 
 Return a JSON object with EXACTLY this structure (all fields required):
 {
-  "phase": "Phase name — e.g. Load Management — Weeks 1–2",
-  "planGoal": "1 sentence describing this week's rehabilitation goal",
+  "runnerTier": "novice" | "intermediate" | "advanced" | "semi_elite",
+  "runnerGoals": ${JSON.stringify(goalsArr)},
+  "checkinFrequencyDays": 7,
+  "phase": "Phase name e.g. Load Management — Week 1",
+  "planGoal": "1 sentence describing this week's goal",
   "aiConfidence": "high" | "moderate" | "low",
   "runningAllowance": {
     "allowed": true | false,
-    "guidance": "1-2 sentences on running guidance this week",
+    "guidance": "1-2 sentences on running this week",
     "protocol": ["step 1", "step 2", "step 3"]
   },
   "strengthSessions": [
     {
       "day": "Day 1",
-      "focus": "Short description of this session's focus",
-      "warmUp": ["warm-up step 1", "warm-up step 2", "warm-up step 3"],
+      "focus": "Short description of session focus",
+      "warmUp": ["warm-up step 1", "warm-up step 2"],
       "exercises": [
         {
           "name": "Exercise name",
           "sets": 3,
-          "reps": "e.g. 10 reps or 5 × 45-second holds",
-          "tempo": "e.g. 2 seconds up, 1 second hold, 2 seconds down",
-          "painRule": "Specific pain threshold instruction for this exercise",
-          "reason": "1 sentence explaining why this exercise is included",
-          "instructions": ["step 1", "step 2", "step 3", "step 4"]
+          "reps": "10 reps",
+          "tempo": "2-1-2",
+          "painRule": "Stop if pain exceeds 3/10",
+          "reason": "1 sentence why this exercise is included",
+          "instructions": ["step 1", "step 2", "step 3"]
         }
       ]
-    },
-    { "day": "Day 3", ... },
-    { "day": "Day 5", ... }
+    }
   ],
+  "preventionWork": ["exercise 1", "exercise 2", "exercise 3", "exercise 4"],
+  "optimisationWork": ["exercise 1", "exercise 2", "exercise 3", "exercise 4"],
   "mobilityRecovery": ["item 1", "item 2", "item 3"],
   "educationNotes": ["note 1", "note 2"],
   "progressionRules": ["rule 1", "rule 2"],
@@ -113,7 +149,10 @@ Return a JSON object with EXACTLY this structure (all fields required):
   "warnings": ["warning 1"]
 }
 
-Include 3 exercises per session. Each session must have a warmUp array (2 items) and an exercises array.`
+If rehab goal: include 3 strengthSessions (Day 1, Day 3, Day 5) with 3 exercises each targeting the injured area.
+If no rehab goal: strengthSessions should be [].
+If prevention goal: preventionWork must have 4–6 items. Otherwise set to [].
+If optimisation goal: optimisationWork must have 4–6 items. Otherwise set to [].`
 }
 
 export async function POST(req: Request) {
@@ -153,7 +192,6 @@ export async function POST(req: Request) {
     const result = await response.json()
     const text = result.content?.[0]?.text ?? ''
 
-    // Extract JSON — strip any accidental markdown fences
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       return NextResponse.json({ error: 'No valid JSON in Claude response' }, { status: 502 })

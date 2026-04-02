@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp, CheckCircle2, Plus, Trash2, AlertCircle, RefreshCw } from 'lucide-react'
+import { ChevronDown, ChevronUp, CheckCircle2, Plus, Trash2, AlertCircle, RefreshCw, Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { BottomNav } from '@/components/bottom-nav'
@@ -298,10 +298,20 @@ export default function ManagePage() {
           type="button"
           onClick={regeneratePlan}
           disabled={regenerating}
-          className="w-full h-12 mb-5 flex items-center justify-center gap-2 rounded-xl bg-sb-primary text-white text-sm font-semibold disabled:opacity-70"
+          className="w-full h-12 mb-3 flex items-center justify-center gap-2 rounded-xl bg-sb-primary text-white text-sm font-semibold disabled:opacity-70"
         >
           <RefreshCw className={`w-4 h-4 ${regenerating ? 'animate-spin' : ''}`} />
           {regenDone ? 'Plan ready — taking you there…' : regenerating ? 'Building your new plan…' : 'Regenerate plan now'}
+        </button>
+
+        {/* Activity log */}
+        <button
+          type="button"
+          onClick={() => router.push('/activity')}
+          className="w-full h-12 mb-5 flex items-center justify-center gap-2 rounded-xl border border-gray-200 text-sm font-semibold text-[#333]"
+        >
+          <Activity className="w-4 h-4" />
+          Activity log
         </button>
 
         {/* ── Profile ── */}
