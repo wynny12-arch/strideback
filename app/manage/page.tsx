@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ChevronUp, CheckCircle2, Plus, Trash2, AlertCircle, RefreshCw, Activity } from 'lucide-react'
+import { ChevronDown, ChevronUp, CheckCircle2, Plus, Trash2, AlertCircle, RefreshCw, Activity, HeartPulse, Shield, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Slider } from '@/components/ui/slider'
 import { BottomNav } from '@/components/bottom-nav'
-import type { OtherActivity, MedicalUpdate, MedicalUpdateType } from '@/types'
+import type { OtherActivity, MedicalUpdate, MedicalUpdateType, RunnerGoal } from '@/types'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -77,6 +77,40 @@ function PainSlider({ label, value, onChange }: { label: string; value: number; 
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+
+const RUNNER_GOALS: {
+  value: RunnerGoal
+  icon: React.ElementType
+  title: string
+  description: string
+  iconColor: string
+  iconBg: string
+}[] = [
+  {
+    value: 'rehab',
+    icon: HeartPulse,
+    title: 'Injury Rehab',
+    description: 'Structured recovery plan to fix your injury and get back running safely.',
+    iconColor: 'text-sb-caution',
+    iconBg: 'bg-sb-caution/10',
+  },
+  {
+    value: 'prevention',
+    icon: Shield,
+    title: 'Injury Prevention',
+    description: 'Strengthen the areas that keep runners sidelined and stay healthy.',
+    iconColor: 'text-sb-success',
+    iconBg: 'bg-sb-success/10',
+  },
+  {
+    value: 'optimisation',
+    icon: Zap,
+    title: 'Performance',
+    description: 'Build strength, power and running economy to run faster.',
+    iconColor: 'text-sb-primary-mid',
+    iconBg: 'bg-sb-primary-mid/10',
+  },
+]
 
 const REGIONS = [
   { value: 'knee', label: 'Knee' },
@@ -154,6 +188,10 @@ export default function ManagePage() {
   const router = useRouter()
   const s = getSaved()
 
+  // Goals
+  const [goals, setGoals] = useState<RunnerGoal[]>((s.goals as RunnerGoal[]) || [])
+  const [goalsSaved, setGoalsSaved] = useState(false)
+
   // Profile
   const [firstName, setFirstName] = useState((s.firstName as string) || '')
   const [age, setAge] = useState(s.age ? String(s.age) : '')
@@ -194,6 +232,16 @@ export default function ManagePage() {
   useEffect(() => { setUpdates(getUpdates()) }, [])
 
   // ── Handlers ────────────────────────────────────────────────────────────────
+
+  function toggleGoal(g: RunnerGoal) {
+    setGoals(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])
+  }
+
+  function saveGoals() {
+    saveMerge({ goals })
+    setGoalsSaved(true)
+    setTimeout(() => setGoalsSaved(false), 3000)
+  }
 
   function saveProfile() {
     saveMerge({ firstName: firstName.trim(), age: Number(age), experienceLevel, weeklyTrainingLoad, mainGoal, otherActivities })
@@ -273,6 +321,9 @@ export default function ManagePage() {
 
   // ── Summaries for collapsed headers ─────────────────────────────────────────
 
+  const goalsSummary = goals.length > 0
+    ? goals.map(g => RUNNER_GOALS.find(r => r.value === g)?.title).filter(Boolean).join(' · ')
+    : 'Not set'
   const profileSummary = firstName ? `${firstName}, ${age || '—'} · ${EXPERIENCE_OPTIONS.find(e => e.value === experienceLevel)?.label || 'Experience not set'}` : 'Not set'
   const injurySummary = REGIONS.find(r => r.value === region)?.label || 'Not set'
   const symptomsSummary = onsetDate ? `${onsetDate.slice(0, 40)}${onsetDate.length > 40 ? '…' : ''} · Pain ${painScoreCurrent}/10` : 'Not set'
@@ -313,6 +364,42 @@ export default function ManagePage() {
           <Activity className="w-4 h-4" />
           Activity log
         </button>
+
+        {/* ── Goals ── */}
+        <SectionCard title="Your goals" summary={goalsSummary}>
+          <div className="mt-4 space-y-3">
+            {RUNNER_GOALS.map(goal => {
+              const selected = goals.includes(goal.value)
+              const Icon = goal.icon
+              return (
+                <button
+                  key={goal.value}
+                  type="button"
+                  onClick={() => toggleGoal(goal.value)}
+                  className={`w-full text-left flex items-start gap-4 px-4 py-4 rounded-2xl border-2 transition-all ${selected ? 'border-sb-primary-mid bg-sb-primary-mid/5' : 'border-gray-200 bg-white'}`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${selected ? 'bg-sb-primary-mid' : goal.iconBg}`}>
+                    <Icon className={`w-5 h-5 ${selected ? 'text-white' : goal.iconColor}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-semibold leading-snug ${selected ? 'text-sb-primary' : 'text-[#333]'}`}>{goal.title}</p>
+                    <p className={`text-xs mt-1 leading-relaxed ${selected ? 'text-[#333]' : 'text-[#555]/60'}`}>{goal.description}</p>
+                  </div>
+                  <div className={`mt-0.5 shrink-0 ${selected ? 'text-sb-primary-mid' : 'text-gray-200'}`}>
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                </button>
+              )
+            })}
+            {goals.includes('rehab') && goals.length > 1 && (
+              <div className="flex items-start gap-3 bg-sb-primary-light rounded-xl px-4 py-3">
+                <span className="text-base mt-0.5">💡</span>
+                <p className="text-xs text-sb-primary leading-relaxed">Rehab comes first. Prevention and performance will be woven in as your recovery progresses.</p>
+              </div>
+            )}
+            <SaveButton onClick={saveGoals} saved={goalsSaved} />
+          </div>
+        </SectionCard>
 
         {/* ── Profile ── */}
         <SectionCard title="Your profile" summary={profileSummary}>
