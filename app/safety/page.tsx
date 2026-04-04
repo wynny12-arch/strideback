@@ -82,7 +82,7 @@ function RedHardStop({
         </h1>
         <p className="text-center text-white/80 text-base mb-8 leading-relaxed">
           We&apos;ve identified symptoms that require clinical review before you
-          can safely start a rehab programme.
+          can safely start a training programme.
         </p>
 
         {safetyData.redFlags.length > 0 && (
@@ -161,14 +161,25 @@ function getSaved(): Record<string, unknown> {
 function getMedicalUpdates(): unknown[] {
   try { return JSON.parse(localStorage.getItem('sb_medical_updates') ?? '[]') } catch { return [] }
 }
+function getSavedGoals(): string[] {
+  try {
+    const data = JSON.parse(localStorage.getItem('sb_onboarding') ?? '{}')
+    return Array.isArray(data.goals) ? data.goals : []
+  } catch { return [] }
+}
 
 export default function SafetyPage() {
   const [devState, setDevState] = useState<SafetyStatus>('green')
   const [generating, setGenerating] = useState(false)
+  const [hasRehab, setHasRehab] = useState(false)
   const router = useRouter()
   const planPromiseRef = useRef<Promise<void> | null>(null)
 
   const safetyData = MOCK_BY_STATE[devState]
+
+  useEffect(() => {
+    setHasRehab(getSavedGoals().includes('rehab'))
+  }, [])
 
   // Start generating the plan immediately when the page loads
   useEffect(() => {
@@ -239,13 +250,15 @@ export default function SafetyPage() {
         >
           {isAmber
             ? 'A few things to keep an eye on.'
-            : 'You are clear to start your rehab plan.'}
+            : "You're good to go."}
         </h1>
 
         <p className="text-center text-base mb-8 leading-relaxed" style={{ color: '#555555' }}>
           {isAmber
             ? "We've noted some caution flags. You can still proceed, but your plan includes specific monitoring rules and escalation guidance."
-            : "No concerns identified. We've built a structured recovery plan tailored to your injury and training history. Let\u2019s get started."}
+            : hasRehab
+              ? "No concerns identified. We've built a structured recovery plan tailored to your injury and training history. Let's get started."
+              : "No concerns identified. We've built a personalised plan tailored to your goals and training profile. Let's get started."}
         </p>
 
         {isAmber && safetyData.cautionFlags.length > 0 && (

@@ -48,6 +48,7 @@ function getSaved(): Record<string, unknown> {
 export default function GoalsPage() {
   const router = useRouter()
   const [goals, setGoals] = useState<RunnerGoal[]>([])
+  const [showPainCheck, setShowPainCheck] = useState(false)
 
   useEffect(() => {
     const saved = getSaved()
@@ -58,14 +59,36 @@ export default function GoalsPage() {
     setGoals(prev =>
       prev.includes(goal) ? prev.filter(g => g !== goal) : [...prev, goal]
     )
+    setShowPainCheck(false)
+  }
+
+  const proceed = (selectedGoals: RunnerGoal[]) => {
+    localStorage.setItem('sb_onboarding', JSON.stringify({
+      ...getSaved(),
+      goals: selectedGoals,
+    }))
+    router.push('/onboarding/profile')
   }
 
   const handleContinue = () => {
-    localStorage.setItem('sb_onboarding', JSON.stringify({
-      ...getSaved(),
-      goals,
-    }))
+    if (!goals.includes('rehab')) {
+      setShowPainCheck(true)
+      return
+    }
+    proceed(goals)
+  }
+
+  const handleAddRehab = () => {
+    const updated = ['rehab', ...goals] as RunnerGoal[]
+    setGoals(updated)
+    setShowPainCheck(false)
+    localStorage.setItem('sb_onboarding', JSON.stringify({ ...getSaved(), goals: updated }))
     router.push('/onboarding/profile')
+  }
+
+  const handleNoPain = () => {
+    setShowPainCheck(false)
+    proceed(goals)
   }
 
   return (
@@ -144,6 +167,33 @@ export default function GoalsPage() {
             <p className="text-xs text-sb-primary leading-relaxed">
               Rehab comes first. Prevention and performance work will be woven in as your recovery progresses.
             </p>
+          </div>
+        )}
+
+        {showPainCheck && (
+          <div className="border-2 border-sb-caution/40 bg-sb-caution/5 rounded-2xl px-4 py-5">
+            <p className="text-sm font-semibold text-[#333] mb-1">Do you have any current pain or injury affecting your running?</p>
+            <p className="text-xs text-[#555]/60 mb-4 leading-relaxed">Even something mild — tightness, soreness, or a niggle that keeps coming back.</p>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleAddRehab}
+                className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 border-sb-caution bg-white text-left"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-[#333]">Yes — add Injury Rehab to my plan</p>
+                  <p className="text-xs text-[#555]/60 mt-0.5">We&apos;ll ask a few questions about it</p>
+                </div>
+                <HeartPulse className="w-5 h-5 text-sb-caution shrink-0 ml-3" />
+              </button>
+              <button
+                type="button"
+                onClick={handleNoPain}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm text-[#555] text-left"
+              >
+                No — I&apos;m currently pain-free
+              </button>
+            </div>
           </div>
         )}
       </div>
