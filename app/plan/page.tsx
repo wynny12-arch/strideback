@@ -107,6 +107,8 @@ export default function PlanPage() {
   const [plan, setPlan] = useState<RehabPlan>(planMock as RehabPlan)
   const [runningExpanded, setRunningExpanded] = useState(false)
   const [rulesExpanded, setRulesExpanded] = useState(false)
+  const [preventionExpanded, setPreventionExpanded] = useState(false)
+  const [optimisationExpanded, setOptimisationExpanded] = useState(false)
   const [completedDays, setCompletedDays] = useState<number[]>([])
 
   useEffect(() => {
@@ -351,41 +353,94 @@ export default function PlanPage() {
           </div>
         )}
 
-        {/* Prevention work — shown only when prevention phase is active */}
-        {preventionActive && plan.preventionWork && plan.preventionWork.length > 0 && (
+        {/* Prevention + Optimisation — journey-style with dropdowns */}
+        {(preventionActive || optimisationActive) && (
           <div className="py-6 border-b border-gray-100">
-            <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-4 h-4 text-sb-success" />
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50">Injury prevention</p>
-            </div>
-            <p className="text-xs text-sb-success font-semibold mb-3">Now active</p>
-            <ul className="space-y-2">
-              {plan.preventionWork.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-[#555] leading-snug">
-                  <span className="text-sb-success shrink-0 mt-0.5">·</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-5">Your plan</p>
+            <div className="space-y-0">
 
-        {/* Optimisation work — shown only when optimisation phase is active */}
-        {optimisationActive && plan.optimisationWork && plan.optimisationWork.length > 0 && (
-          <div className="py-6 border-b border-gray-100">
-            <div className="flex items-center gap-2 mb-1">
-              <Zap className="w-4 h-4 text-sb-primary-mid" />
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50">Performance</p>
+              {preventionActive && plan.preventionWork && plan.preventionWork.length > 0 && (
+                <div className="flex gap-4">
+                  {/* Icon + connector */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-9 h-9 rounded-xl bg-sb-success flex items-center justify-center shrink-0">
+                      <Shield className="w-4 h-4 text-white" />
+                    </div>
+                    {optimisationActive && (
+                      <div className="w-px flex-1 bg-gray-200 mt-2" style={{ minHeight: '28px' }} />
+                    )}
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 pb-6">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <p className="text-sm font-bold text-[#222]">Injury Prevention</p>
+                      <span className="text-[10px] font-semibold bg-sb-primary text-white px-2 py-0.5 rounded-full">Active now</span>
+                    </div>
+                    <p className="text-xs text-sb-success font-semibold mb-1">Starting immediately</p>
+                    <p className="text-sm text-[#555] leading-relaxed mb-3">Prehab and stability work to keep you resilient and injury-free.</p>
+                    <button
+                      type="button"
+                      onClick={() => setPreventionExpanded(v => !v)}
+                      className="flex items-center gap-1 text-xs font-semibold text-sb-primary-mid"
+                    >
+                      {preventionExpanded ? 'Hide exercises' : 'View exercises'}
+                      {preventionExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                    {preventionExpanded && (
+                      <ul className="mt-3 space-y-2">
+                        {plan.preventionWork.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-[#555] leading-snug bg-gray-50 rounded-xl px-3 py-2.5">
+                            <span className="text-sb-success font-bold shrink-0">{i + 1}.</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {optimisationActive && plan.optimisationWork && plan.optimisationWork.length > 0 && (
+                <div className="flex gap-4">
+                  {/* Icon */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-9 h-9 rounded-xl bg-sb-primary-mid flex items-center justify-center shrink-0">
+                      <Zap className="w-4 h-4 text-white" />
+                    </div>
+                  </div>
+                  {/* Content */}
+                  <div className="flex-1 pb-2">
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <p className="text-sm font-bold text-[#222]">Performance</p>
+                      <span className="text-[10px] font-semibold bg-sb-primary text-white px-2 py-0.5 rounded-full">Active now</span>
+                    </div>
+                    <p className="text-xs text-sb-primary-mid font-semibold mb-1">
+                      {preventionActive ? 'Running alongside prevention' : 'Starting immediately'}
+                    </p>
+                    <p className="text-sm text-[#555] leading-relaxed mb-3">Strength and power work to improve your running economy and speed.</p>
+                    <button
+                      type="button"
+                      onClick={() => setOptimisationExpanded(v => !v)}
+                      className="flex items-center gap-1 text-xs font-semibold text-sb-primary-mid"
+                    >
+                      {optimisationExpanded ? 'Hide exercises' : 'View exercises'}
+                      {optimisationExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    </button>
+                    {optimisationExpanded && (
+                      <ul className="mt-3 space-y-2">
+                        {plan.optimisationWork.map((item, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm text-[#555] leading-snug bg-gray-50 rounded-xl px-3 py-2.5">
+                            <span className="text-sb-primary-mid font-bold shrink-0">{i + 1}.</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+
             </div>
-            <p className="text-xs text-sb-primary-mid font-semibold mb-3">Now active</p>
-            <ul className="space-y-2">
-              {plan.optimisationWork.map((item, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-[#555] leading-snug">
-                  <span className="text-sb-primary-mid shrink-0 mt-0.5">·</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
           </div>
         )}
 
