@@ -29,6 +29,7 @@ function ExerciseCard({ exercise, expanded, onToggle }: { exercise: RehabPlan['s
         <button
           type="button"
           style={{ touchAction: 'manipulation' }}
+          onTouchEnd={(e) => { e.preventDefault(); onToggle() }}
           onClick={onToggle}
           className="p-1.5 -mr-1 shrink-0 text-[#555]/40"
           aria-label={expanded ? 'Collapse' : 'Expand'}

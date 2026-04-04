@@ -115,6 +115,7 @@ function TextExerciseItem({ item, index, accentColor }: { item: string; index: n
       <button
         type="button"
         style={{ touchAction: 'manipulation' }}
+        onTouchEnd={(e) => { e.preventDefault(); setExpanded(v => !v) }}
         onClick={() => setExpanded(v => !v)}
         className="w-full flex items-start gap-2 px-3 py-2.5 text-left"
       >

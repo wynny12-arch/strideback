@@ -40,22 +40,26 @@ export function ExerciseGif({ name, show }: { name: string; show: boolean }) {
 
   if (loading) {
     return (
-      <div className="w-full h-44 bg-gray-50 rounded-xl flex items-center justify-center mb-3">
+      <div className="w-full h-36 bg-gray-100 rounded-xl flex items-center justify-center mb-3">
         <div className="w-6 h-6 rounded-full border-2 border-sb-primary border-t-transparent animate-spin" />
       </div>
     )
   }
 
-  if (!gifUrl) return null
+  if (!gifUrl) {
+    return (
+      <p className="text-xs text-[#555]/40 italic mb-3">No demo available for this exercise</p>
+    )
+  }
 
   return (
-    <div className="w-full rounded-xl overflow-hidden bg-gray-50 mb-3 flex items-center justify-center" style={{ maxHeight: '200px' }}>
+    <div className="w-full rounded-xl overflow-hidden bg-gray-50 mb-3 flex items-center justify-center" style={{ maxHeight: '220px' }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={gifUrl}
         alt={`${name} demonstration`}
         className="w-auto object-contain"
-        style={{ maxHeight: '200px' }}
+        style={{ maxHeight: '220px' }}
       />
     </div>
   )
