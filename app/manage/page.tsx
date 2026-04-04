@@ -123,13 +123,6 @@ const REGIONS = [
   { value: 'other', label: 'Other' },
 ]
 
-const EXPERIENCE_OPTIONS = [
-  { value: 'beginner', label: 'Beginner', sub: '< 1 year' },
-  { value: 'regular', label: 'Regular', sub: '1–3 years' },
-  { value: 'intermediate', label: 'Intermediate', sub: '3–5 years' },
-  { value: 'competitive', label: 'Competitive', sub: '5+ / racing' },
-]
-
 const LOAD_OPTIONS = [
   { value: 'none', label: 'None', sub: 'Not training' },
   { value: 'light', label: 'Light', sub: '1–2x / week' },
@@ -195,7 +188,6 @@ export default function ManagePage() {
   // Profile
   const [firstName, setFirstName] = useState((s.firstName as string) || '')
   const [age, setAge] = useState(s.age ? String(s.age) : '')
-  const [experienceLevel, setExperienceLevel] = useState((s.experienceLevel as string) || '')
   const [weeklyTrainingLoad, setWeeklyTrainingLoad] = useState((s.weeklyTrainingLoad as string) || '')
   const [mainGoal, setMainGoal] = useState((s.mainGoal as string) || '')
   const [otherActivities, setOtherActivities] = useState<OtherActivity[]>((s.otherActivities as OtherActivity[]) || [])
@@ -244,7 +236,7 @@ export default function ManagePage() {
   }
 
   function saveProfile() {
-    saveMerge({ firstName: firstName.trim(), age: Number(age), experienceLevel, weeklyTrainingLoad, mainGoal, otherActivities })
+    saveMerge({ firstName: firstName.trim(), age: Number(age), weeklyTrainingLoad, mainGoal, otherActivities })
     setProfileSaved(true)
     setTimeout(() => setProfileSaved(false), 3000)
   }
@@ -324,7 +316,7 @@ export default function ManagePage() {
   const goalsSummary = goals.length > 0
     ? goals.map(g => RUNNER_GOALS.find(r => r.value === g)?.title).filter(Boolean).join(' · ')
     : 'Not set'
-  const profileSummary = firstName ? `${firstName}, ${age || '—'} · ${EXPERIENCE_OPTIONS.find(e => e.value === experienceLevel)?.label || 'Experience not set'}` : 'Not set'
+  const profileSummary = firstName ? `${firstName}, ${age || '—'}` : 'Not set'
   const injurySummary = REGIONS.find(r => r.value === region)?.label || 'Not set'
   const symptomsSummary = onsetDate ? `${onsetDate.slice(0, 40)}${onsetDate.length > 40 ? '…' : ''} · Pain ${painScoreCurrent}/10` : 'Not set'
   const notesSummary = notes ? notes.slice(0, 60) + (notes.length > 60 ? '…' : '') : 'No notes added'
@@ -414,22 +406,6 @@ export default function ManagePage() {
                 <label className="block text-xs font-medium text-[#555] mb-1.5">Age</label>
                 <input type="number" value={age} onChange={e => setAge(e.target.value)} min={16} max={99}
                   className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid" />
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-[#555] mb-2">Running experience</p>
-              <div className="grid grid-cols-2 gap-2">
-                {EXPERIENCE_OPTIONS.map(opt => (
-                  <button key={opt.value} type="button" onClick={() => setExperienceLevel(opt.value)}
-                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left ${experienceLevel === opt.value ? 'border-sb-primary-mid bg-sb-primary-mid text-white' : 'border-gray-200 text-[#333]'}`}>
-                    <div>
-                      <p className="text-xs font-medium">{opt.label}</p>
-                      <p className={`text-xs ${experienceLevel === opt.value ? 'text-white/70' : 'text-[#555]/50'}`}>{opt.sub}</p>
-                    </div>
-                    {experienceLevel === opt.value && <CheckCircle2 className="w-4 h-4 shrink-0" />}
-                  </button>
-                ))}
               </div>
             </div>
 

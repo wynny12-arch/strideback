@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import type { OtherActivity, ExperienceLevel, TrainingLoad, YearsRunning, RaceDistance } from '@/types'
+import type { OtherActivity, TrainingLoad, YearsRunning, RaceDistance } from '@/types'
 
 // ── small reusable components ──────────────────────────────────────────────
 
@@ -156,13 +156,6 @@ const OTHER_ACTIVITY_OPTIONS: OptionItem<OtherActivity>[] = [
   { value: 'other', label: 'Other' },
 ]
 
-const EXPERIENCE_OPTIONS: OptionItem<ExperienceLevel>[] = [
-  { value: 'beginner', label: 'Beginner', sub: '< 1 year' },
-  { value: 'regular', label: 'Regular', sub: '1–3 years' },
-  { value: 'intermediate', label: 'Intermediate', sub: '3–5 years' },
-  { value: 'competitive', label: 'Competitive', sub: '5+ / racing' },
-]
-
 const LOAD_OPTIONS: OptionItem<TrainingLoad>[] = [
   { value: 'none', label: 'None', sub: 'Not training' },
   { value: 'light', label: 'Light', sub: '1–2x / week' },
@@ -200,7 +193,6 @@ export default function ProfilePage() {
   // core
   const [firstName, setFirstName] = useState('')
   const [age, setAge] = useState('')
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(null)
   const [weeklyTrainingLoad, setWeeklyTrainingLoad] = useState<TrainingLoad | null>(null)
 
   // performance profile
@@ -235,7 +227,6 @@ export default function ProfilePage() {
     const s = getSaved()
     if (s.firstName) setFirstName(s.firstName as string)
     if (s.age) setAge(String(s.age))
-    if (s.experienceLevel) setExperienceLevel(s.experienceLevel as ExperienceLevel)
     if (s.weeklyTrainingLoad) setWeeklyTrainingLoad(s.weeklyTrainingLoad as TrainingLoad)
     if (s.yearsRunning) setYearsRunning(s.yearsRunning as YearsRunning)
     if (s.marathonPb) setMarathonPb(s.marathonPb as string)
@@ -259,7 +250,7 @@ export default function ProfilePage() {
     }
   }, [])
 
-  const canContinue = Boolean(firstName.trim() && age && experienceLevel && weeklyTrainingLoad && yearsRunning)
+  const canContinue = Boolean(firstName.trim() && age && weeklyTrainingLoad && yearsRunning)
 
   const handleContinue = () => {
     const saved = getSaved()
@@ -280,7 +271,6 @@ export default function ProfilePage() {
       age: Number(age),
       activityType: ['running'],
       otherActivities,
-      experienceLevel,
       weeklyTrainingLoad,
       yearsRunning,
       marathonPb: noMarathon ? null : (marathonPb.trim() || null),
@@ -400,11 +390,6 @@ export default function ProfilePage() {
               className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid disabled:bg-gray-50 disabled:text-[#555]/40"
             />
           </div>
-        </Section>
-
-        {/* ── Experience & load ── */}
-        <Section title="Running experience">
-          <OptionGrid options={EXPERIENCE_OPTIONS} value={experienceLevel} onChange={setExperienceLevel} />
         </Section>
 
         <Section title="Current weekly training">
