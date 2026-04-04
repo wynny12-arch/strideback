@@ -57,18 +57,42 @@ export default function ActivityPage() {
   const [form, setForm] = useState(emptyForm)
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [parsedFromImage, setParsedFromImage] = useState(false)
 
   useEffect(() => {
     setLog(getLog())
   }, [])
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
+    setParsedFromImage(false)
     const reader = new FileReader()
-    reader.onload = (ev) => {
-      setImageDataUrl(ev.target?.result as string)
+    reader.onload = async (ev) => {
+      const dataUrl = ev.target?.result as string
+      setImageDataUrl(dataUrl)
+      // Call Claude Vision to extract activity data
+      try {
+        const res = await fetch('/api/parse-activity-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageDataUrl: dataUrl }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          setForm(f => ({
+            ...f,
+            type: data.activityType ?? f.type,
+            durationMins: data.durationMins != null ? String(data.durationMins) : f.durationMins,
+            distanceValue: data.distanceValue ?? f.distanceValue,
+            distanceUnit: data.distanceUnit ?? f.distanceUnit,
+            pace: data.pace ?? f.pace,
+            avgHeartRate: data.avgHeartRate != null ? String(data.avgHeartRate) : f.avgHeartRate,
+          }))
+          setParsedFromImage(true)
+        }
+      } catch { /* silently skip — form fields stay empty for manual fill */ }
       setUploading(false)
     }
     reader.readAsDataURL(file)
@@ -94,6 +118,7 @@ export default function ActivityPage() {
     saveLog(updated)
     setForm(emptyForm)
     setImageDataUrl(null)
+    setParsedFromImage(false)
     setShowForm(false)
   }
 
@@ -271,23 +296,31 @@ export default function ActivityPage() {
 
             {/* Upload screenshot */}
             <div className="mb-5">
-              <label className="block text-xs font-semibold text-[#555] mb-1.5">Upload Strava screenshot (optional)</label>
+              <label className="block text-xs font-semibold text-[#555] mb-1.5">Upload screenshot (optional)</label>
               {imageDataUrl ? (
-                <div className="relative">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={imageDataUrl} alt="Activity screenshot" className="w-full rounded-xl border border-gray-200 max-h-48 object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => setImageDataUrl(null)}
-                    className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
+                <div>
+                  <div className="relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={imageDataUrl} alt="Activity screenshot" className="w-full rounded-xl border border-gray-200 max-h-48 object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => { setImageDataUrl(null); setParsedFromImage(false) }}
+                      className="absolute top-2 right-2 bg-black/50 text-white rounded-full p-1"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                  {uploading && (
+                    <p className="text-xs text-[#555]/60 mt-2 text-center">Reading your screenshot…</p>
+                  )}
+                  {parsedFromImage && !uploading && (
+                    <p className="text-xs text-sb-success font-semibold mt-2 text-center">Fields filled from screenshot — check and edit if needed</p>
+                  )}
                 </div>
               ) : (
                 <label className="flex items-center gap-2 h-11 border border-dashed border-gray-300 rounded-xl px-4 cursor-pointer text-sm text-[#999]">
                   <Upload className="w-4 h-4" />
-                  <span>{uploading ? 'Loading...' : 'Tap to upload'}</span>
+                  <span>Tap to upload Strava, Garmin or Apple screenshot</span>
                   <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                 </label>
               )}
@@ -316,9 +349,12 @@ export default function ActivityPage() {
                     {info.emoji}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-semibold text-[#333]">{info.label}</p>
                       <p className="text-xs text-[#999]">{formatDate(entry.date)}</p>
+                      {entry.source === 'upload' && (
+                        <span className="text-[10px] font-semibold bg-sb-primary-light text-sb-primary-mid px-1.5 py-0.5 rounded-full">from screenshot</span>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
                       {entry.durationMins && <p className="text-xs text-[#555]">{entry.durationMins} min</p>}
