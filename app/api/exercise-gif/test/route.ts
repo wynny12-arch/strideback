@@ -18,11 +18,15 @@ export async function GET() {
       }
     )
 
-    const text = await res.text()
+    const data = await res.json()
+    const first = data?.[0] ?? null
     return NextResponse.json({
       status: res.status,
       keyPrefix: apiKey.slice(0, 8) + '...',
-      body: text.slice(0, 500),
+      resultCount: data?.length,
+      fields: first ? Object.keys(first) : [],
+      gifUrl: first?.gifUrl ?? null,
+      name: first?.name ?? null,
     })
   } catch (e) {
     return NextResponse.json({ error: String(e) })
