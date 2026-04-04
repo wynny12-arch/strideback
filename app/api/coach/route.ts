@@ -57,13 +57,37 @@ export async function POST(req: Request) {
 
   if (context.plan) {
     const pl = context.plan
+    const runningAllowance = pl.runningAllowance as Record<string, unknown> | undefined
+
+    const formatExercise = (e: Record<string, unknown>) =>
+      `  - ${e.name}: ${e.sets} sets × ${e.reps}${e.tempo ? `, tempo ${e.tempo}` : ''}${e.painRule ? `, pain rule: ${e.painRule}` : ''}${e.instructions ? `\n    How to do it: ${(e.instructions as string[]).join(' → ')}` : ''}`
+
+    const sessions = Array.isArray(pl.strengthSessions) ? pl.strengthSessions as Record<string, unknown>[] : []
+    const rehabSection = sessions.length > 0
+      ? `\nREHAB SESSIONS:\n${sessions.map((s: Record<string, unknown>) => {
+          const exList = (Array.isArray(s.exercises) ? s.exercises as Record<string, unknown>[] : []).map(formatExercise).join('\n')
+          return `${s.day} — ${s.focus}:\n${exList}`
+        }).join('\n')}`
+      : ''
+
+    const prevWork = Array.isArray(pl.preventionWork) ? pl.preventionWork as string[] : []
+    const prevSection = prevWork.length > 0
+      ? `\nPREVENTION EXERCISES:\n${prevWork.map((item, i) => `  ${i + 1}. ${item}`).join('\n')}`
+      : ''
+
+    const optWork = Array.isArray(pl.optimisationWork) ? pl.optimisationWork as string[] : []
+    const optSection = optWork.length > 0
+      ? `\nPERFORMANCE EXERCISES:\n${optWork.map((item, i) => `  ${i + 1}. ${item}`).join('\n')}`
+      : ''
+
     contextParts.push(`CURRENT PLAN:
 - Phase: ${pl.phase ?? 'Unknown'}
 - Goal: ${pl.planGoal ?? 'Unknown'}
 - Tier: ${pl.runnerTier ?? 'Unknown'}
+- Active phases: ${Array.isArray(pl.activePhases) ? (pl.activePhases as string[]).join(', ') : 'Unknown'}
 - Check-in frequency: every ${pl.checkinFrequencyDays ?? 7} days
-- Running allowed: ${(pl.runningAllowance as Record<string, unknown> | undefined)?.allowed ? 'Yes' : 'No'}
-- Running guidance: ${(pl.runningAllowance as Record<string, unknown> | undefined)?.guidance ?? 'N/A'}`)
+- Running allowed: ${runningAllowance?.allowed ? 'Yes' : 'No'}
+- Running guidance: ${runningAllowance?.guidance ?? 'N/A'}${rehabSection}${prevSection}${optSection}`)
   }
 
   if (context.recentCheckins && context.recentCheckins.length > 0) {
