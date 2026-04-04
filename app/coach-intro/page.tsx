@@ -260,9 +260,9 @@ export default function CoachIntroPage() {
           <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">How I work</p>
           <div className="space-y-3">
             {[
-              { icon: '📋', text: 'Your plan updates every week based on how you\'re progressing.' },
-              { icon: '💬', text: 'Ask me anything in the Coach tab — about your plan, your pain, or your training.' },
-              { icon: '📊', text: 'Log your activities so I can track your full training load, not just rehab sessions.' },
+              { icon: '💬', text: 'Chat with me anytime in the Coach tab — about your plan, your pain, how a session went, or anything on your mind.' },
+              { icon: '📤', text: 'Upload your runs or connect Strava — I\'ll use your full activity data, not just rehab sessions, to build a complete picture.' },
+              { icon: '🔄', text: 'Everything you share — chats, activities, check-ins — is persistent and feeds directly into how your plan evolves. The more I know, the better your plan gets.' },
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3 bg-sb-primary-light/60 rounded-xl px-4 py-3">
                 <span className="text-base mt-0.5 shrink-0">{item.icon}</span>
