@@ -46,7 +46,7 @@ function buildPrompt(data: Record<string, unknown>): string {
   const {
     firstName, age, experienceLevel, weeklyTrainingLoad,
     otherActivities, trainingPlan, weeklyMileage, distanceUnit,
-    longestRecentRun, surface, typicalPace,
+    longestRecentRun, surfaces, surface, typicalPace,
     goals, yearsRunning, marathonPb, fiveKPb, raceGoal,
     region, onsetDate, hasDiagnosis, diagnosisName,
     painScoreWorst, painScoreCurrent, aggravatingFactors, currentTolerance,
@@ -107,7 +107,7 @@ RUNNER PROFILE:
 - Weekly distance: ${weeklyMileage ? `${weeklyMileage} ${distanceUnit ?? 'miles'}` : 'Not provided'}
 - Longest recent run: ${longestRecentRun ? `${longestRecentRun} ${distanceUnit ?? 'miles'}` : 'Not provided'}
 - Typical pace: ${typicalPace || 'Not provided'}
-- Preferred surface: ${surface || 'Not provided'}
+- Preferred surface: ${Array.isArray(surfaces) && surfaces.length ? surfaces.join(', ') : surface || 'Not provided'}
 - Race goal: ${raceGoalText}
 - Training plan: ${trainingPlan || 'None provided'}
 ${injurySection}

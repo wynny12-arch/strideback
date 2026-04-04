@@ -215,7 +215,7 @@ export default function ProfilePage() {
   const [weeklyMileage, setWeeklyMileage] = useState('')
   const [distanceUnit, setDistanceUnit] = useState<'miles' | 'km'>('miles')
   const [longestRecentRun, setLongestRecentRun] = useState('')
-  const [surface, setSurface] = useState<'road' | 'trail' | 'mixed' | 'treadmill' | null>(null)
+  const [surfaces, setSurfaces] = useState<string[]>([])
   const [typicalPace, setTypicalPace] = useState('')
   const [trainingPlan, setTrainingPlan] = useState('')
 
@@ -237,7 +237,8 @@ export default function ProfilePage() {
     if (s.weeklyMileage) setWeeklyMileage(s.weeklyMileage as string)
     if (s.distanceUnit) setDistanceUnit(s.distanceUnit as 'miles' | 'km')
     if (s.longestRecentRun) setLongestRecentRun(s.longestRecentRun as string)
-    if (s.surface) setSurface(s.surface as 'road' | 'trail' | 'mixed' | 'treadmill')
+    if (s.surfaces) setSurfaces(s.surfaces as string[])
+    else if (s.surface) setSurfaces([s.surface as string])
     if (s.typicalPace) setTypicalPace(s.typicalPace as string)
     if (s.trainingPlan) setTrainingPlan(s.trainingPlan as string)
     // race goal
@@ -279,7 +280,7 @@ export default function ProfilePage() {
       weeklyMileage: weeklyMileage.trim() || null,
       distanceUnit,
       longestRecentRun: longestRecentRun.trim() || null,
-      surface: surface || null,
+      surfaces: surfaces.length ? surfaces : null,
       typicalPace: typicalPace.trim() || null,
       trainingPlan: trainingPlan.trim() || null,
     }))
@@ -525,22 +526,25 @@ export default function ProfilePage() {
                     className="w-full h-11 px-3 rounded-xl border border-gray-200 text-sm text-[#333] focus:outline-none focus:border-sb-primary-mid"
                   />
                 </div>
-                <label className="block text-xs font-medium text-[#555] mb-1.5">Preferred surface</label>
+                <label className="block text-xs font-medium text-[#555] mb-1.5">Preferred surface <span className="font-normal text-[#555]/50">(select all that apply)</span></label>
                 <div className="grid grid-cols-4 gap-2">
-                  {(['road', 'trail', 'mixed', 'treadmill'] as const).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setSurface(surface === s ? null : s)}
-                      className={`py-2 rounded-xl border text-xs font-medium capitalize transition-colors ${
-                        surface === s
-                          ? 'border-sb-primary-mid bg-sb-primary-mid text-white'
-                          : 'border-gray-200 text-[#555]'
-                      }`}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                  {(['road', 'trail', 'mixed', 'treadmill'] as const).map((s) => {
+                    const selected = surfaces.includes(s)
+                    return (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSurfaces(selected ? surfaces.filter(x => x !== s) : [...surfaces, s])}
+                        className={`py-2 rounded-xl border text-xs font-medium capitalize transition-colors ${
+                          selected
+                            ? 'border-sb-primary-mid bg-sb-primary-mid text-white'
+                            : 'border-gray-200 text-[#555]'
+                        }`}
+                      >
+                        {s}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
