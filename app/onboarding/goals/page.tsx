@@ -49,6 +49,7 @@ export default function GoalsPage() {
   const router = useRouter()
   const [goals, setGoals] = useState<RunnerGoal[]>([])
   const [showPainCheck, setShowPainCheck] = useState(false)
+  const [rehabAdded, setRehabAdded] = useState(false)
 
   useEffect(() => {
     const saved = getSaved()
@@ -60,6 +61,7 @@ export default function GoalsPage() {
       prev.includes(goal) ? prev.filter(g => g !== goal) : [...prev, goal]
     )
     setShowPainCheck(false)
+    setRehabAdded(false)
   }
 
   const proceed = (selectedGoals: RunnerGoal[]) => {
@@ -82,8 +84,7 @@ export default function GoalsPage() {
     const updated = ['rehab', ...goals] as RunnerGoal[]
     setGoals(updated)
     setShowPainCheck(false)
-    localStorage.setItem('sb_onboarding', JSON.stringify({ ...getSaved(), goals: updated }))
-    router.push('/onboarding/profile')
+    setRehabAdded(true)
   }
 
   const handleNoPain = () => {
@@ -167,6 +168,16 @@ export default function GoalsPage() {
             <p className="text-xs text-sb-primary leading-relaxed">
               Rehab comes first. Prevention and performance work will be woven in as your recovery progresses.
             </p>
+          </div>
+        )}
+
+        {rehabAdded && (
+          <div className="flex items-start gap-3 bg-sb-caution/10 border border-sb-caution/30 rounded-2xl px-4 py-4">
+            <HeartPulse className="w-5 h-5 text-sb-caution shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-[#333] mb-0.5">Injury Rehab added to your plan</p>
+              <p className="text-xs text-[#555]/70 leading-relaxed">We&apos;ll ask a few questions about your injury on the next screen. Hit Continue when you&apos;re ready.</p>
+            </div>
           </div>
         )}
 
