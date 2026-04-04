@@ -601,8 +601,63 @@ export default function ManagePage() {
           </div>
         </div>
 
+        {/* ── Reset ── */}
+        <ResetSection />
+
       </div>
       <BottomNav />
+    </div>
+  )
+}
+
+function ResetSection() {
+  const router = useRouter()
+  const [confirming, setConfirming] = useState(false)
+
+  const handleReset = () => {
+    const keys = [
+      'sb_onboarding', 'sb_plan', 'sb_completed_days',
+      'sb_checkin_history', 'sb_checkin_latest',
+      'sb_safety_review', 'sb_medical_updates',
+      'sb_activity_log', 'sb_coach_history',
+    ]
+    keys.forEach(k => localStorage.removeItem(k))
+    router.replace('/onboarding/welcome')
+  }
+
+  return (
+    <div className="mt-6 border border-red-100 rounded-2xl overflow-hidden">
+      <div className="px-4 py-4 bg-white">
+        <p className="text-sm font-semibold text-[#333] mb-0.5">Reset app</p>
+        <p className="text-xs text-[#555]/60 mb-4">Wipes all data and returns to the start. Use this to test onboarding or start fresh.</p>
+        {!confirming ? (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            className="w-full h-10 rounded-xl border border-red-200 text-red-500 text-sm font-semibold"
+          >
+            Reset everything
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-xs text-red-500 font-medium text-center">All your data will be permanently deleted.</p>
+            <button
+              type="button"
+              onClick={handleReset}
+              className="w-full h-10 rounded-xl bg-red-500 text-white text-sm font-semibold"
+            >
+              Yes, reset everything
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="w-full h-10 rounded-xl border border-gray-200 text-[#555] text-sm font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

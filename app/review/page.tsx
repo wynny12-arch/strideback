@@ -189,6 +189,84 @@ function WeeklyCheckInSummary({ checkIn }: { checkIn: Record<string, unknown> })
   )
 }
 
+const SLEEP_LABELS: Record<number, string> = { 1: 'Poor', 2: 'Fair', 3: 'Good', 4: 'Great' }
+const ENERGY_LABELS: Record<number, string> = { 1: 'Drained', 2: 'Low', 3: 'Normal', 4: 'High' }
+function DailyCheckInsSummary({ checkIns }: { checkIns: Record<string, unknown>[] }): React.ReactElement {
+  const dailyOnes = checkIns.filter(c => c.type === 'daily')
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+  const thisWeek = dailyOnes.filter(c => new Date(c.createdAt as string).getTime() > weekAgo)
+
+  if (!thisWeek.length) {
+    return (
+      <div className="mb-6 px-4 py-6 bg-gray-50 rounded-xl text-center">
+        <p className="text-sm text-[#555]/60 leading-relaxed">No daily check-ins logged this week.</p>
+      </div>
+    )
+  }
+
+  const avgNum = (key: string) => {
+    const vals = thisWeek.map(c => Number(c[key])).filter(v => !isNaN(v) && v > 0)
+    if (!vals.length) return null
+    return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10
+  }
+
+  const avgSleep = avgNum('sleepQuality')
+  const avgEnergy = avgNum('energyLevel')
+  const hrvVals = thisWeek.map(c => c.hrv as number | null).filter(Boolean) as number[]
+  const avgHrv = hrvVals.length ? Math.round(hrvVals.reduce((a, b) => a + b, 0) / hrvVals.length) : null
+  const niggleDays = thisWeek.filter(c => c.hasNiggles).length
+  const trainDays = thisWeek.filter(c => c.didTrain).length
+  const nigglesDetails = thisWeek.filter(c => c.hasNiggles && c.nigglesNote).map(c => c.nigglesNote as string)
+
+  return (
+    <div className="mb-6">
+      <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">This week — {thisWeek.length} days logged</p>
+      <div className="space-y-2">
+        {avgSleep !== null && (
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+            <span className="text-sm text-[#333] font-medium">Avg sleep</span>
+            <span className="text-sm font-semibold text-[#555]">{SLEEP_LABELS[Math.round(avgSleep)]} ({avgSleep}/4)</span>
+          </div>
+        )}
+        {avgEnergy !== null && (
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+            <span className="text-sm text-[#333] font-medium">Avg energy</span>
+            <span className="text-sm font-semibold text-[#555]">{ENERGY_LABELS[Math.round(avgEnergy)]} ({avgEnergy}/4)</span>
+          </div>
+        )}
+        {avgHrv !== null && (
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+            <span className="text-sm text-[#333] font-medium">Avg morning HRV</span>
+            <span className="text-sm font-semibold text-[#555]">{avgHrv}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+          <span className="text-sm text-[#333] font-medium">Training days</span>
+          <span className="text-sm font-semibold text-[#555]">{trainDays} of {thisWeek.length}</span>
+        </div>
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+          <span className="text-sm text-[#333] font-medium">Niggle days</span>
+          <span className={`text-sm font-semibold ${niggleDays > 0 ? 'text-sb-caution' : 'text-sb-success'}`}>
+            {niggleDays === 0 ? 'None' : `${niggleDays} day${niggleDays > 1 ? 's' : ''}`}
+          </span>
+        </div>
+      </div>
+      {nigglesDetails.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-2">Niggles noted</p>
+          <div className="space-y-2">
+            {nigglesDetails.map((note, i) => (
+              <div key={i} className="px-4 py-3 bg-gray-50 rounded-xl">
+                <p className="text-sm text-[#555] leading-snug">{note}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function ReviewPage() {
   useRequireOnboarding()
   const router = useRouter()
@@ -196,13 +274,15 @@ export default function ReviewPage() {
   const [completedDays, setCompletedDays] = useState<number[]>([])
   const [totalSessions, setTotalSessions] = useState(3)
   const [hasRehab, setHasRehab] = useState(false)
+  const [isSemiElite, setIsSemiElite] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [nextPlan, setNextPlan] = useState<Record<string, unknown> | null>(null)
   const planPromiseRef = useRef<Promise<void> | null>(null)
 
   useEffect(() => {
     const history: CheckIn[] = getSaved('sb_checkin_history', [])
-    const recentCheckIns = history.slice(-3)
+    // For semi-elite, we need the full week of daily check-ins, not just 3
+    const recentCheckIns = history.slice(-7)
     setCheckIns(recentCheckIns)
     const completed: number[] = getSaved('sb_completed_days', [])
     setCompletedDays(completed)
@@ -210,6 +290,7 @@ export default function ReviewPage() {
     if (plan.strengthSessions?.length) setTotalSessions(plan.strengthSessions.length)
     const goals: string[] = Array.isArray(plan.runnerGoals) ? plan.runnerGoals : []
     setHasRehab(goals.includes('rehab'))
+    setIsSemiElite(plan.runnerTier === 'semi_elite')
 
     // Start generating next plan in background immediately
     const onboarding = getSaved('sb_onboarding', {})
@@ -266,8 +347,10 @@ export default function ReviewPage() {
   const decisionConfig = decision ? DECISION_CONFIG[decision] : null
 
 
-  const latestWeeklyCheckIn = hasRehab ? null :
-    [...checkIns].reverse().find(c => (c as unknown as Record<string, unknown>).type === 'weekly') as unknown as Record<string, unknown> | undefined
+  const allCheckIns: Record<string, unknown>[] = checkIns as unknown as Record<string, unknown>[]
+  const latestWeeklyCheckIn = (!hasRehab && !isSemiElite)
+    ? [...allCheckIns].reverse().find(c => c.type === 'weekly')
+    : undefined
 
   return (
     <div className="min-h-screen bg-white pb-32">
@@ -324,8 +407,11 @@ export default function ReviewPage() {
           </div>
         ))}
 
-        {/* Non-rehab: weekly check-in summary */}
-        {!hasRehab && (latestWeeklyCheckIn ? (
+        {/* Non-rehab: semi-elite gets daily summary, others get weekly */}
+        {!hasRehab && isSemiElite && (
+          <DailyCheckInsSummary checkIns={allCheckIns} />
+        )}
+        {!hasRehab && !isSemiElite && (latestWeeklyCheckIn ? (
           <WeeklyCheckInSummary checkIn={latestWeeklyCheckIn} />
         ) : (
           <div className="mb-6 px-4 py-6 bg-gray-50 rounded-xl text-center">

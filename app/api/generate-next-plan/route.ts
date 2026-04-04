@@ -46,6 +46,32 @@ Return ONLY a single valid JSON object. No markdown, no code fences.`
 function summariseCheckIns(checkIns: Record<string, unknown>[]): string {
   if (!checkIns.length) return 'No check-in data recorded.'
 
+  // Detect daily check-ins (semi-elite)
+  const dailyCheckIns = checkIns.filter(c => c.type === 'daily')
+  if (dailyCheckIns.length > 0) {
+    const avg = (key: string) => {
+      const vals = dailyCheckIns.map(c => Number(c[key])).filter(v => !isNaN(v) && v > 0)
+      return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : 'N/A'
+    }
+    const sleepLabels: Record<number, string> = { 1: 'Poor', 2: 'Fair', 3: 'Good', 4: 'Great' }
+    const energyLabels: Record<number, string> = { 1: 'Drained', 2: 'Low', 3: 'Normal', 4: 'High' }
+    const hrvVals = dailyCheckIns.map(c => c.hrv as number | null).filter(Boolean) as number[]
+    const avgHrv = hrvVals.length ? Math.round(hrvVals.reduce((a, b) => a + b, 0) / hrvVals.length) : null
+    const niggleDays = dailyCheckIns.filter(c => c.hasNiggles).length
+    const trainDays = dailyCheckIns.filter(c => c.didTrain).length
+    const nigglesNotes = dailyCheckIns.filter(c => c.hasNiggles && c.nigglesNote).map(c => c.nigglesNote).join(' | ')
+    const avgSleep = avg('sleepQuality')
+    const avgEnergy = avg('energyLevel')
+    const sleepLabel = avgSleep !== 'N/A' ? ` (${sleepLabels[Math.round(Number(avgSleep))] ?? ''})` : ''
+    const energyLabel = avgEnergy !== 'N/A' ? ` (${energyLabels[Math.round(Number(avgEnergy))] ?? ''})` : ''
+
+    return `Daily check-ins (semi-elite): ${dailyCheckIns.length} days logged
+Training days: ${trainDays} of ${dailyCheckIns.length}
+Avg sleep: ${avgSleep}/4${sleepLabel}
+Avg energy: ${avgEnergy}/4${energyLabel}${avgHrv !== null ? `\nAvg morning HRV: ${avgHrv}` : ''}
+Niggle days: ${niggleDays}${nigglesNotes ? `\nNiggle notes: ${nigglesNotes}` : ''}`
+  }
+
   // Detect weekly (non-rehab) check-in
   const latestWeekly = [...checkIns].reverse().find(c => c.type === 'weekly')
   if (latestWeekly) {

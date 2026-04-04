@@ -111,6 +111,8 @@ export default function PlanPage() {
   const [optimisationExpanded, setOptimisationExpanded] = useState(false)
   const [sessionsExpanded, setSessionsExpanded] = useState<boolean[]>([])
   const [completedDays, setCompletedDays] = useState<number[]>([])
+  const [dailyDoneToday, setDailyDoneToday] = useState(false)
+  const [weeklyDoneThisWeek, setWeeklyDoneThisWeek] = useState(false)
 
   useEffect(() => {
     setPlan(getStoredPlan())
@@ -118,6 +120,12 @@ export default function PlanPage() {
     setCompletedDays(stored)
     const p = getStoredPlan()
     setSessionsExpanded(new Array(p.strengthSessions?.length ?? 3).fill(false))
+
+    const today = new Date().toDateString()
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+    const history: Record<string, unknown>[] = JSON.parse(localStorage.getItem('sb_checkin_history') ?? '[]')
+    setDailyDoneToday(history.some(c => c.type === 'daily' && new Date(c.createdAt as string).toDateString() === today))
+    setWeeklyDoneThisWeek(history.some(c => c.type === 'weekly' && new Date(c.createdAt as string).getTime() > weekAgo))
   }, [])
 
   const goals = plan.runnerGoals ?? []
@@ -366,20 +374,61 @@ export default function PlanPage() {
           </div>
         )}
 
-        {/* Non-rehab weekly check-in CTA */}
-        {!hasRehab && (
+        {/* Non-rehab check-in CTA */}
+        {!hasRehab && plan.runnerTier === 'semi_elite' && (
           <div className="py-6 border-b border-gray-100">
             <div className="bg-sb-primary-light/60 rounded-xl p-4">
-              <p className="font-semibold text-sm text-sb-primary mb-1">How was your week?</p>
-              <p className="text-sm text-[#555] leading-relaxed mb-3">Check in weekly so your coach can adjust your plan based on how you&apos;re responding.</p>
-              <button
-                type="button"
-                onClick={() => router.push('/checkin-weekly')}
-                onTouchEnd={(e) => { e.preventDefault(); router.push('/checkin-weekly') }}
-                className="text-xs font-semibold text-sb-primary-mid flex items-center gap-1"
-              >
-                Weekly check-in <ChevronDown className="w-3 h-3 -rotate-90" />
-              </button>
+              {dailyDoneToday ? (
+                <>
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle2 className="w-4 h-4 text-sb-success shrink-0" />
+                    <p className="font-semibold text-sm text-sb-primary">Today&apos;s check-in done</p>
+                  </div>
+                  <p className="text-sm text-[#555] leading-relaxed">Come back tomorrow to log your next daily check-in.</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold text-sm text-sb-primary mb-1">Daily check-in</p>
+                  <p className="text-sm text-[#555] leading-relaxed mb-3">Log sleep, energy, HRV and any niggles — takes about 30 seconds.</p>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/checkin-daily')}
+                    onTouchEnd={(e) => { e.preventDefault(); router.push('/checkin-daily') }}
+                    className="text-xs font-semibold text-sb-primary-mid flex items-center gap-1"
+                  >
+                    Check in now <ChevronDown className="w-3 h-3 -rotate-90" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {!hasRehab && plan.runnerTier !== 'semi_elite' && (
+          <div className="py-6 border-b border-gray-100">
+            <div className="bg-sb-primary-light/60 rounded-xl p-4">
+              {weeklyDoneThisWeek ? (
+                <>
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle2 className="w-4 h-4 text-sb-success shrink-0" />
+                    <p className="font-semibold text-sm text-sb-primary">Weekly check-in done</p>
+                  </div>
+                  <p className="text-sm text-[#555] leading-relaxed">Your coach has your data for this week. Check back after your next weekly review.</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-semibold text-sm text-sb-primary mb-1">How was your week?</p>
+                  <p className="text-sm text-[#555] leading-relaxed mb-3">Check in weekly so your coach can adjust your plan based on how you&apos;re responding.</p>
+                  <button
+                    type="button"
+                    onClick={() => router.push('/checkin-weekly')}
+                    onTouchEnd={(e) => { e.preventDefault(); router.push('/checkin-weekly') }}
+                    className="text-xs font-semibold text-sb-primary-mid flex items-center gap-1"
+                  >
+                    Weekly check-in <ChevronDown className="w-3 h-3 -rotate-90" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
