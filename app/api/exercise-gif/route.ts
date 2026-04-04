@@ -25,8 +25,11 @@ export async function GET(req: Request) {
     }
 
     const data = await res.json()
-    console.log('[exercise-gif]', name, '→', data?.length, 'results, first:', data?.[0]?.name)
-    const gifUrl: string | null = data?.[0]?.gifUrl ?? null
+    const first = data?.[0]
+    console.log('[exercise-gif]', name, '→', data?.length, 'results, first:', first?.name, 'id:', first?.id)
+    if (!first?.id) return NextResponse.json({ gifUrl: null })
+    // New API version removed gifUrl — construct from id
+    const gifUrl = `https://v2.exercisedb.io/image/${first.id}.gif`
     return NextResponse.json({ gifUrl })
   } catch (e) {
     console.error('[exercise-gif] fetch failed:', e)
