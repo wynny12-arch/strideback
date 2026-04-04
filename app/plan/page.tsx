@@ -109,12 +109,15 @@ export default function PlanPage() {
   const [rulesExpanded, setRulesExpanded] = useState(false)
   const [preventionExpanded, setPreventionExpanded] = useState(false)
   const [optimisationExpanded, setOptimisationExpanded] = useState(false)
+  const [sessionsExpanded, setSessionsExpanded] = useState<boolean[]>([])
   const [completedDays, setCompletedDays] = useState<number[]>([])
 
   useEffect(() => {
     setPlan(getStoredPlan())
     const stored = JSON.parse(localStorage.getItem('sb_completed_days') ?? '[]')
     setCompletedDays(stored)
+    const p = getStoredPlan()
+    setSessionsExpanded(new Array(p.strengthSessions?.length ?? 3).fill(false))
   }, [])
 
   const goals = plan.runnerGoals ?? []
@@ -277,36 +280,85 @@ export default function PlanPage() {
         {/* Rehab sessions */}
         {hasRehab && plan.strengthSessions.length > 0 && (
           <div className="py-6 border-b border-gray-100">
-            <div className="flex items-center gap-2 mb-4">
-              <HeartPulse className="w-4 h-4 text-sb-caution" />
-              <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50">Rehab sessions</p>
-            </div>
-            <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-5">Rehab sessions</p>
+            <div>
               {plan.strengthSessions.map((session, i) => {
                 const done = completedDays.includes(i)
+                const isLast = i === plan.strengthSessions.length - 1
+                const expanded = sessionsExpanded[i] ?? false
+                const toggleExpand = () => setSessionsExpanded(prev => {
+                  const next = [...prev]
+                  next[i] = !next[i]
+                  return next
+                })
+
                 return (
-                  <div
-                    key={session.day}
-                    className={`w-full flex items-center justify-between p-4 rounded-xl border ${done ? 'border-sb-success bg-[#E8F5EE]' : 'border-gray-200'}`}
-                  >
-                    <div>
-                      <p className={`text-xs font-semibold mb-0.5 ${done ? 'text-sb-success' : 'text-sb-primary-mid'}`}>{session.day}</p>
-                      <p className="text-sm font-medium text-[#333]">{session.focus}</p>
-                      <p className="text-xs text-[#555]/60 mt-0.5">{done ? 'Completed' : `${session.exercises.length} exercises`}</p>
+                  <div key={session.day} className="flex gap-4">
+                    {/* Icon + connector */}
+                    <div className="flex flex-col items-center">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${done ? 'bg-sb-success' : 'bg-sb-caution'}`}>
+                        {done
+                          ? <CheckCircle2 className="w-4 h-4 text-white" />
+                          : <HeartPulse className="w-4 h-4 text-white" />
+                        }
+                      </div>
+                      {!isLast && (
+                        <div className="w-px flex-1 bg-gray-200 mt-2" style={{ minHeight: '28px' }} />
+                      )}
                     </div>
-                    {done ? (
-                      <CheckCircle2 className="w-5 h-5 text-sb-success shrink-0" />
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/session?day=${i}`)}
-                        onTouchEnd={(e) => { e.preventDefault(); router.push(`/session?day=${i}`) }}
-                        className="p-2 -mr-1 text-[#555]/40"
-                        aria-label={`Open ${session.day}`}
-                      >
-                        <ChevronDown className="w-5 h-5 -rotate-90" />
-                      </button>
-                    )}
+                    {/* Content */}
+                    <div className={`flex-1 ${!isLast ? 'pb-6' : 'pb-2'}`}>
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        <p className="text-sm font-bold text-[#222]">{session.day}</p>
+                        {done
+                          ? <span className="text-[10px] font-semibold bg-sb-success text-white px-2 py-0.5 rounded-full">Completed</span>
+                          : <span className="text-[10px] font-semibold bg-sb-primary text-white px-2 py-0.5 rounded-full">Up next</span>
+                        }
+                      </div>
+                      <p className="text-xs text-sb-caution font-semibold mb-1">{session.focus}</p>
+                      <p className="text-sm text-[#555] leading-relaxed mb-3">{session.exercises.length} exercises · targeted rehab work</p>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={toggleExpand}
+                          className="flex items-center gap-1 text-xs font-semibold text-sb-primary-mid"
+                        >
+                          {expanded ? 'Hide exercises' : 'View exercises'}
+                          {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        </button>
+                        {!done && (
+                          <>
+                            <span className="text-gray-300">·</span>
+                            <button
+                              type="button"
+                              onClick={() => router.push(`/session?day=${i}`)}
+                              onTouchEnd={(e) => { e.preventDefault(); router.push(`/session?day=${i}`) }}
+                              className="flex items-center gap-1 text-xs font-semibold text-sb-caution"
+                            >
+                              Start session <ChevronDown className="w-3 h-3 -rotate-90" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      {expanded && (
+                        <ul className="mt-3 space-y-2">
+                          {session.exercises.map((ex, j) => (
+                            <li key={j} className="bg-gray-50 rounded-xl px-3 py-3">
+                              <div className="flex items-start gap-2">
+                                <span className="text-sb-caution font-bold text-sm shrink-0">{j + 1}.</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-[#222] leading-snug">{ex.name}</p>
+                                  <p className="text-xs text-[#555]/70 mt-0.5">
+                                    {ex.sets} sets × {ex.reps}
+                                    {ex.tempo ? ` · ${ex.tempo}` : ''}
+                                  </p>
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </div>
                 )
               })}
