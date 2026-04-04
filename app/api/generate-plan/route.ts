@@ -34,6 +34,10 @@ Pain rules (apply to rehab sessions only):
 Running allowance (rehab goal): only allow running if current pain ≤ 4/10 AND tolerance is "can_jog" or "can_run". If pain > 6/10 or tolerance is "cannot_walk"/"can_walk", set allowed to false.
 Non-rehab goals: set runningAllowance.allowed to true with guidance appropriate to tier/goals.
 
+PREVENTION + OPTIMISATION SEQUENCING (when both selected without rehab):
+- novice: preventionWork must be foundational stability exercises (glute activation, single-leg balance, hip stability, ankle stability). optimisationWork should be introductory and lighter (2–3 items max this week). Add an educationNote that performance work will build progressively over coming weeks as the stability base develops.
+- intermediate/advanced/semi_elite: include full preventionWork and optimisationWork concurrently at appropriate intensity for the tier. No sequencing needed — both run together from week 1.
+
 Keep ALL string values concise — 15 words or fewer. Arrays should contain the minimum items specified.
 
 Return ONLY a single valid JSON object. No markdown, no explanation, no code fences — raw JSON only.`

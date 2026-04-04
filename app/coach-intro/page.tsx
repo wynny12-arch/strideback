@@ -117,8 +117,37 @@ export default function CoachIntroPage() {
 
   const goals = plan?.runnerGoals ?? []
   const hasRehab = goals.includes('rehab')
+  const hasPrevention = goals.includes('prevention')
+  const hasOptimisation = goals.includes('optimisation')
+  const rehabOnly = hasRehab && !hasPrevention && !hasOptimisation
+  const prevOptNoRehab = !hasRehab && hasPrevention && hasOptimisation
+  const isNovice = plan?.runnerTier === 'novice'
   const activeGoals = PHASE_CONFIG.filter(p => goals.includes(p.goal))
   const tierConfig = plan?.runnerTier ? TIER_CONFIG[plan.runnerTier] : null
+
+  const progressionBullets: { icon: string; text: string }[] = rehabOnly
+    ? [
+        { icon: '📊', text: 'I track your pain scores, confidence and stiffness after every session.' },
+        { icon: '🛡', text: "When rehab is progressing well, I'll introduce injury prevention work — even if you haven't selected it." },
+        { icon: '⚡', text: "Once prevention is established, performance work comes next. Each phase builds on the last." },
+        { icon: '💡', text: "You don't need to select these goals now. I'll offer them at your weekly review when your body is ready." },
+        { icon: '🔔', text: "You'll see a notification when a new phase unlocks. Your plan updates automatically." },
+      ]
+    : prevOptNoRehab && isNovice
+    ? [
+        { icon: '🛡', text: 'Prevention work starts immediately — building the stability foundation that keeps you injury-free.' },
+        { icon: '⚡', text: 'Performance work layers in progressively as your foundation develops over the coming weeks.' },
+        { icon: '📊', text: 'I monitor your progress each week and adjust the balance as you build.' },
+        { icon: '🔔', text: "Your plan updates every week based on how you're responding." },
+      ]
+    : [
+        { icon: '📊', text: `I monitor your pain scores, confidence, and ${hasPrevention || hasOptimisation ? 'sleep, energy, and HRV ' : ''}data from every check-in.` },
+        { icon: '🛡', text: `When your rehab is progressing well — pain consistently low, sessions feeling manageable — I'll start weaving in ${hasPrevention ? 'injury prevention work' : 'the next phase'}.` },
+        { icon: '⚡', text: "Once prevention is established, I'll layer in performance work. Each phase builds on the last." },
+        { icon: '🔔', text: "You'll get a notification at your weekly review when a new phase unlocks. Your plan updates automatically." },
+      ]
+
+  const showProgressionSection = hasRehab || activeGoals.length > 1
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -206,8 +235,8 @@ export default function CoachIntroPage() {
           </div>
         )}
 
-        {/* How I control the journey */}
-        {activeGoals.length > 1 && (
+        {/* How I advance the journey */}
+        {showProgressionSection && (
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">How I advance your journey</p>
             <div className="bg-sb-primary-light/60 rounded-2xl px-4 py-4 space-y-3">
@@ -215,12 +244,7 @@ export default function CoachIntroPage() {
                 You don&apos;t decide when to move to the next phase — I do, based on your data.
               </p>
               <div className="space-y-2.5">
-                {[
-                  { icon: '📊', text: `I monitor your pain scores, confidence, and ${activeGoals.some(g => g.goal === 'prevention' || g.goal === 'optimisation') ? 'sleep, energy, and HRV ' : ''}data from every check-in.` },
-                  { icon: '🛡', text: `When your rehab is progressing well — pain consistently low, sessions feeling manageable — I'll start weaving in ${hasRehab && activeGoals.some(g => g.goal === 'prevention') ? 'injury prevention work' : 'the next phase'}.` },
-                  { icon: '⚡', text: `Once prevention is established, I'll layer in performance work. Each phase builds on the last.` },
-                  { icon: '🔔', text: `You'll get a notification at your weekly review when a new phase unlocks. Your plan updates automatically.` },
-                ].map((item, i) => (
+                {progressionBullets.map((item, i) => (
                   <div key={i} className="flex items-start gap-3">
                     <span className="text-base shrink-0 mt-0.5">{item.icon}</span>
                     <p className="text-sm text-[#555] leading-relaxed">{item.text}</p>
