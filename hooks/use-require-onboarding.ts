@@ -9,7 +9,11 @@ export function useRequireOnboarding() {
   useEffect(() => {
     try {
       const data = JSON.parse(localStorage.getItem('sb_onboarding') ?? '{}')
-      if (!data.firstName || !data.region || !data.currentTolerance) {
+      const goals: string[] = Array.isArray(data.goals) ? data.goals : []
+      const hasRehab = goals.includes('rehab')
+      const missingBase = !data.firstName
+      const missingInjury = hasRehab && (!data.region || !data.currentTolerance)
+      if (missingBase || missingInjury) {
         router.replace('/onboarding/welcome')
       }
     } catch {
