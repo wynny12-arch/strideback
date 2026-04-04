@@ -18,8 +18,9 @@ export function ExerciseGif({ name, show }: { name: string; show: boolean }) {
     // Check localStorage cache first — avoids repeat API calls
     try {
       const cached = localStorage.getItem(cacheKey(name))
-      if (cached !== null) {
-        setGifUrl(cached === 'null' ? null : cached)
+      // Only use cache for successful results — never cache null/failures
+      if (cached && cached !== 'null') {
+        setGifUrl(cached)
         return
       }
     } catch { /* ignore */ }
@@ -29,7 +30,10 @@ export function ExerciseGif({ name, show }: { name: string; show: boolean }) {
       .then(r => r.json())
       .then(data => {
         const url: string | null = data.gifUrl ?? null
-        try { localStorage.setItem(cacheKey(name), url ?? 'null') } catch { /* ignore */ }
+        // Only cache successful GIF URLs
+        if (url) {
+          try { localStorage.setItem(cacheKey(name), url) } catch { /* ignore */ }
+        }
         setGifUrl(url)
       })
       .catch(() => {})

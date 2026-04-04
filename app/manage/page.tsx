@@ -622,6 +622,8 @@ function ResetSection() {
       'sb_activity_log', 'sb_coach_history',
     ]
     keys.forEach(k => localStorage.removeItem(k))
+    // Clear cached exercise GIF URLs
+    Object.keys(localStorage).filter(k => k.startsWith('sb_gif_')).forEach(k => localStorage.removeItem(k))
     router.replace('/onboarding/welcome')
   }
 
