@@ -10,7 +10,9 @@ export default function Home() {
     try {
       const onboarding = JSON.parse(localStorage.getItem('sb_onboarding') ?? '{}')
       const plan = localStorage.getItem('sb_plan')
-      const hasOnboarding = onboarding.firstName && onboarding.region && onboarding.currentTolerance
+      const goals: string[] = Array.isArray(onboarding.goals) ? onboarding.goals : []
+      const hasRehab = goals.includes('rehab')
+      const hasOnboarding = onboarding.firstName && (!hasRehab || (onboarding.region && onboarding.currentTolerance))
       if (hasOnboarding && plan) {
         router.replace('/plan')
       } else {
