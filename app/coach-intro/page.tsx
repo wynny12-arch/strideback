@@ -140,14 +140,17 @@ export default function CoachIntroPage() {
         { icon: '📊', text: 'I monitor your progress each week and adjust the balance as you build.' },
         { icon: '🔔', text: "Your plan updates every week based on how you're responding." },
       ]
-    : [
-        { icon: '📊', text: `I monitor your pain scores, confidence, and ${hasPrevention || hasOptimisation ? 'sleep, energy, and HRV ' : ''}data from every check-in.` },
+    : hasRehab
+    ? [
+        { icon: '📊', text: 'I track your pain scores, confidence and stiffness after every session.' },
         { icon: '🛡', text: `When your rehab is progressing well — pain consistently low, sessions feeling manageable — I'll start weaving in ${hasPrevention ? 'injury prevention work' : 'the next phase'}.` },
         { icon: '⚡', text: "Once prevention is established, I'll layer in performance work. Each phase builds on the last." },
         { icon: '🔔', text: "You'll get a notification at your weekly review when a new phase unlocks. Your plan updates automatically." },
       ]
+    : []
 
-  const showProgressionSection = hasRehab || activeGoals.length > 1
+  // Only show progression section when there's actual phase gating to explain
+  const showProgressionSection = hasRehab || (prevOptNoRehab && isNovice)
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
