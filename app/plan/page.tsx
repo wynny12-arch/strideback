@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
 import { CheckCircle2, XCircle, ChevronDown, ChevronUp, AlertTriangle, TrendingUp, StopCircle, HeartPulse, Shield, Zap } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
+import { ExerciseGif } from '@/components/exercise-gif'
 import planMock from '@/mocks/rehab-plan.json'
 import type { RehabPlan, RunnerTier, RunnerGoal } from '@/types'
 
@@ -352,7 +353,7 @@ export default function PlanPage() {
                         <ul className="mt-3 space-y-2">
                           {session.exercises.map((ex, j) => (
                             <li key={j} className="bg-gray-50 rounded-xl px-3 py-3">
-                              <div className="flex items-start gap-2">
+                              <div className="flex items-start gap-2 mb-2">
                                 <span className="text-sb-caution font-bold text-sm shrink-0">{j + 1}.</span>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-semibold text-[#222] leading-snug">{ex.name}</p>
@@ -362,6 +363,7 @@ export default function PlanPage() {
                                   </p>
                                 </div>
                               </div>
+                              <ExerciseGif name={ex.name} show={expanded} />
                             </li>
                           ))}
                         </ul>

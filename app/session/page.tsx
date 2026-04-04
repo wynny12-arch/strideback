@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
 import { ChevronDown, ChevronUp, AlertTriangle, Footprints, Flame } from 'lucide-react'
 import { BottomNav } from '@/components/bottom-nav'
+import { ExerciseGif } from '@/components/exercise-gif'
 import planMock from '@/mocks/rehab-plan.json'
 import type { RehabPlan } from '@/types'
 
@@ -38,6 +39,9 @@ function ExerciseCard({ exercise, expanded, onToggle }: { exercise: RehabPlan['s
 
       {expanded && (
         <div className="px-4 pb-4 space-y-3 bg-white border-t border-gray-100">
+          <div className="pt-3">
+            <ExerciseGif name={exercise.name} show={expanded} />
+          </div>
           {exercise.instructions && exercise.instructions.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-[#555]/50 uppercase tracking-wide mb-2">How to do it</p>
