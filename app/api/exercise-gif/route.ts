@@ -10,22 +10,26 @@ export async function GET(req: Request) {
 
   try {
     const slug = encodeURIComponent(name.toLowerCase())
-    const res = await fetch(
-      `https://exercisedb.p.rapidapi.com/exercises/name/${slug}?limit=1&offset=0`,
-      {
-        headers: {
-          'X-RapidAPI-Key': apiKey,
-          'X-RapidAPI-Host': 'exercisedb.p.rapidapi.com',
-        },
-      }
-    )
+    const url = `https://exercisedb.p.rapidapi.com/exercises/name/${slug}?limit=1&offset=0`
+    const res = await fetch(url, {
+      headers: {
+        'X-RapidAPI-Key': apiKey,
+        'X-RapidAPI-Host': 'exercisedb.p.rapidapi.com',
+      },
+    })
 
-    if (!res.ok) return NextResponse.json({ gifUrl: null })
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error('[exercise-gif] API error', res.status, errText)
+      return NextResponse.json({ gifUrl: null })
+    }
 
     const data = await res.json()
+    console.log('[exercise-gif]', name, '→', data?.length, 'results, first:', data?.[0]?.name)
     const gifUrl: string | null = data?.[0]?.gifUrl ?? null
     return NextResponse.json({ gifUrl })
-  } catch {
+  } catch (e) {
+    console.error('[exercise-gif] fetch failed:', e)
     return NextResponse.json({ gifUrl: null })
   }
 }
