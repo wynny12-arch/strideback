@@ -45,6 +45,27 @@ Return ONLY a single valid JSON object. No markdown, no code fences.`
 
 function summariseCheckIns(checkIns: Record<string, unknown>[]): string {
   if (!checkIns.length) return 'No check-in data recorded.'
+
+  // Detect weekly (non-rehab) check-in
+  const latestWeekly = [...checkIns].reverse().find(c => c.type === 'weekly')
+  if (latestWeekly) {
+    const runFeelingLabels: Record<number, string> = { 1: 'Easy', 2: 'Good', 3: 'Manageable', 4: 'Tough' }
+    const suppLabels: Record<string, string> = { all: 'All', most: 'Most', some: 'Some', none: 'None' }
+    const sleepSummary = latestWeekly.sleepQuality ? `\nSleep quality: ${latestWeekly.sleepQuality}/4` : ''
+    const energySummary = latestWeekly.energyLevel ? `\nEnergy level: ${latestWeekly.energyLevel}/4` : ''
+    const hrvSummary = latestWeekly.hrv ? `\nHRV: ${latestWeekly.hrv}` : ''
+    const nigglesText = latestWeekly.hasNiggles
+      ? `Yes${latestWeekly.nigglesNote ? ` — ${latestWeekly.nigglesNote}` : ''}`
+      : 'None'
+    const notes = latestWeekly.freeTextNotes ? `\nNotes: ${latestWeekly.freeTextNotes}` : ''
+
+    return `Weekly check-in (non-rehab runner):
+Run feeling: ${runFeelingLabels[Number(latestWeekly.runFeeling)] ?? 'Unknown'}
+Niggles or tightness: ${nigglesText}
+Supplementary work completed: ${suppLabels[String(latestWeekly.supplementaryWork)] ?? 'Unknown'}${sleepSummary}${energySummary}${hrvSummary}${notes}`
+  }
+
+  // Rehab session check-ins
   const avg = (key: string) => {
     const vals = checkIns.map(c => Number(c[key])).filter(v => !isNaN(v))
     return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : 'N/A'

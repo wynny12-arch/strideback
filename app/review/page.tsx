@@ -129,12 +129,73 @@ function CheckInDataSection({ checkIns, notes, avgPainBefore, avgPainDuring, avg
   )
 }
 
+const RUN_FEELING_LABELS: Record<number, { label: string; color: string }> = {
+  1: { label: 'Easy', color: '#1F7A4D' },
+  2: { label: 'Good', color: '#1F7A4D' },
+  3: { label: 'Manageable', color: '#B07D00' },
+  4: { label: 'Tough', color: '#C0392B' },
+}
+
+const SUPP_WORK_LABELS: Record<string, string> = {
+  all: 'All sessions completed',
+  most: 'Most completed',
+  some: 'Some completed',
+  none: 'Skipped this week',
+}
+
+function WeeklyCheckInSummary({ checkIn }: { checkIn: Record<string, unknown> }): React.ReactElement {
+  const runFeeling = RUN_FEELING_LABELS[checkIn.runFeeling as number]
+  const niggles = checkIn.hasNiggles as boolean | null
+  const nigglesNote = checkIn.nigglesNote as string | null
+  const suppWork = SUPP_WORK_LABELS[checkIn.supplementaryWork as string] ?? '—'
+  const notes = checkIn.freeTextNotes as string | null
+
+  return (
+    <>
+      <div className="mb-6">
+        <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">This week</p>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+            <span className="text-sm text-[#333] font-medium">Runs felt</span>
+            {runFeeling && <span className="text-sm font-semibold" style={{ color: runFeeling.color }}>{runFeeling.label}</span>}
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+            <span className="text-sm text-[#333] font-medium">Niggles or tightness</span>
+            <span className={`text-sm font-semibold ${niggles ? 'text-sb-caution' : 'text-sb-success'}`}>
+              {niggles === null ? '—' : niggles ? 'Yes' : 'None'}
+            </span>
+          </div>
+          {niggles && nigglesNote && (
+            <div className="px-4 py-3 bg-gray-50 rounded-xl">
+              <p className="text-xs text-[#555]/60 mb-1">Detail</p>
+              <p className="text-sm text-[#555] leading-snug">{nigglesNote}</p>
+            </div>
+          )}
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl">
+            <span className="text-sm text-[#333] font-medium">Supplementary work</span>
+            <span className="text-sm font-semibold text-[#555]">{suppWork}</span>
+          </div>
+        </div>
+      </div>
+      {notes && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-3">Your notes</p>
+          <div className="px-4 py-3 bg-gray-50 rounded-xl">
+            <p className="text-sm text-[#555] leading-snug">{notes}</p>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 export default function ReviewPage() {
   useRequireOnboarding()
   const router = useRouter()
   const [checkIns, setCheckIns] = useState<CheckIn[]>([])
   const [completedDays, setCompletedDays] = useState<number[]>([])
   const [totalSessions, setTotalSessions] = useState(3)
+  const [hasRehab, setHasRehab] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [nextPlan, setNextPlan] = useState<Record<string, unknown> | null>(null)
   const planPromiseRef = useRef<Promise<void> | null>(null)
@@ -147,6 +208,8 @@ export default function ReviewPage() {
     setCompletedDays(completed)
     const plan = getSaved('sb_plan', {})
     if (plan.strengthSessions?.length) setTotalSessions(plan.strengthSessions.length)
+    const goals: string[] = Array.isArray(plan.runnerGoals) ? plan.runnerGoals : []
+    setHasRehab(goals.includes('rehab'))
 
     // Start generating next plan in background immediately
     const onboarding = getSaved('sb_onboarding', {})
@@ -203,6 +266,9 @@ export default function ReviewPage() {
   const decisionConfig = decision ? DECISION_CONFIG[decision] : null
 
 
+  const latestWeeklyCheckIn = hasRehab ? null :
+    [...checkIns].reverse().find(c => (c as unknown as Record<string, unknown>).type === 'weekly') as unknown as Record<string, unknown> | undefined
+
   return (
     <div className="min-h-screen bg-white pb-32">
       {/* Header */}
@@ -210,35 +276,40 @@ export default function ReviewPage() {
         <div className="w-full max-w-[480px] mx-auto">
           <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-2">Weekly review</p>
           <h1 className="text-xl font-bold text-white leading-snug">
-            {sessionsCompleted} of {totalSessions} sessions completed
+            {hasRehab
+              ? `${sessionsCompleted} of ${totalSessions} sessions completed`
+              : 'Week in review'}
           </h1>
         </div>
       </div>
 
       <div className="w-full max-w-[480px] mx-auto px-6 pt-6">
 
-        {/* Session completion */}
-        <div className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Sessions this week</p>
-          <div className="flex gap-3">
-            {Array.from({ length: totalSessions }).map((_, i) => {
-              const done = completedDays.includes(i)
-              return (
-                <div key={i} className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border ${done ? 'border-sb-success bg-[#E8F5EE]' : 'border-gray-200 bg-gray-50'}`}>
-                  {done
-                    ? <CheckCircle2 className="w-6 h-6 text-sb-success" />
-                    : <Circle className="w-6 h-6 text-gray-300" />
-                  }
-                  <span className={`text-xs font-semibold ${done ? 'text-sb-success' : 'text-[#555]/40'}`}>
-                    Day {i * 2 + 1}
-                  </span>
-                </div>
-              )
-            })}
+        {/* Rehab: session completion badges */}
+        {hasRehab && (
+          <div className="mb-6">
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-4">Sessions this week</p>
+            <div className="flex gap-3">
+              {Array.from({ length: totalSessions }).map((_, i) => {
+                const done = completedDays.includes(i)
+                return (
+                  <div key={i} className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-xl border ${done ? 'border-sb-success bg-[#E8F5EE]' : 'border-gray-200 bg-gray-50'}`}>
+                    {done
+                      ? <CheckCircle2 className="w-6 h-6 text-sb-success" />
+                      : <Circle className="w-6 h-6 text-gray-300" />
+                    }
+                    <span className={`text-xs font-semibold ${done ? 'text-sb-success' : 'text-[#555]/40'}`}>
+                      Day {i * 2 + 1}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        {hasData ? (
+        {/* Rehab: pain/confidence check-in data */}
+        {hasRehab && (hasData ? (
           <CheckInDataSection
             checkIns={checkIns}
             notes={notes}
@@ -251,7 +322,16 @@ export default function ReviewPage() {
           <div className="mb-6 px-4 py-6 bg-gray-50 rounded-xl text-center">
             <p className="text-sm text-[#555]/60 leading-relaxed">No check-in data yet. Complete a session and check in to see your weekly summary here.</p>
           </div>
-        )}
+        ))}
+
+        {/* Non-rehab: weekly check-in summary */}
+        {!hasRehab && (latestWeeklyCheckIn ? (
+          <WeeklyCheckInSummary checkIn={latestWeeklyCheckIn} />
+        ) : (
+          <div className="mb-6 px-4 py-6 bg-gray-50 rounded-xl text-center">
+            <p className="text-sm text-[#555]/60 leading-relaxed">No check-in data yet for this week.</p>
+          </div>
+        ))}
 
         {/* Phase unlock celebration */}
         {nextPlan?.phaseUnlocked && nextPlan?.phaseUnlockedMessage && (

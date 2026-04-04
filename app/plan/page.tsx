@@ -312,6 +312,24 @@ export default function PlanPage() {
           </div>
         )}
 
+        {/* Non-rehab weekly check-in CTA */}
+        {!hasRehab && (
+          <div className="py-6 border-b border-gray-100">
+            <div className="bg-sb-primary-light/60 rounded-xl p-4">
+              <p className="font-semibold text-sm text-sb-primary mb-1">How was your week?</p>
+              <p className="text-sm text-[#555] leading-relaxed mb-3">Check in weekly so your coach can adjust your plan based on how you&apos;re responding.</p>
+              <button
+                type="button"
+                onClick={() => router.push('/checkin-weekly')}
+                onTouchEnd={(e) => { e.preventDefault(); router.push('/checkin-weekly') }}
+                className="text-xs font-semibold text-sb-primary-mid flex items-center gap-1"
+              >
+                Weekly check-in <ChevronDown className="w-3 h-3 -rotate-90" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Week complete banner */}
         {hasRehab && plan.strengthSessions.length > 0 && completedDays.length >= plan.strengthSessions.length && (
           <div className="py-6 border-b border-gray-100">
