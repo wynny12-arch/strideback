@@ -172,20 +172,43 @@ export default function SafetyPage() {
   const [devState, setDevState] = useState<SafetyStatus>('green')
   const [generating, setGenerating] = useState(false)
   const [hasRehab, setHasRehab] = useState(false)
+  const [safetyData, setSafetyData] = useState<SafetyReview>(MOCK_BY_STATE['green'])
+  const [safetyLoaded, setSafetyLoaded] = useState(false)
   const router = useRouter()
   const planPromiseRef = useRef<Promise<void> | null>(null)
-
-  const safetyData = MOCK_BY_STATE[devState]
+  const safetyPromiseRef = useRef<Promise<void> | null>(null)
 
   useEffect(() => {
-    setHasRehab(getSavedGoals().includes('rehab'))
-  }, [])
+    const goals = getSavedGoals()
+    const rehabSelected = goals.includes('rehab')
+    setHasRehab(rehabSelected)
 
-  // Start generating the plan immediately when the page loads
-  useEffect(() => {
-    localStorage.removeItem('sb_completed_days')
     const onboarding = getSaved()
+    localStorage.removeItem('sb_completed_days')
     const medicalUpdates = getMedicalUpdates()
+
+    // Run safety check and plan generation in parallel
+    if (rehabSelected) {
+      safetyPromiseRef.current = fetch('/api/safety-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(onboarding),
+      }).then(async (res) => {
+        if (res.ok) {
+          const result = await res.json()
+          if (result.status) {
+            setSafetyData(result as SafetyReview)
+            setDevState(result.status as SafetyStatus)
+          }
+        }
+      }).catch(() => { /* fall back to green mock */ }).finally(() => {
+        setSafetyLoaded(true)
+      })
+    } else {
+      // Non-rehab users skip safety screening — always green
+      setSafetyLoaded(true)
+    }
+
     planPromiseRef.current = fetch('/api/generate-plan', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -195,15 +218,14 @@ export default function SafetyPage() {
         const plan = await res.json()
         localStorage.setItem('sb_plan', JSON.stringify(plan))
       }
-    }).catch(() => { /* silently fall back to mock */ })
+    }).catch(() => { /* silently fall back */ })
   }, [])
 
   const generateAndContinue = useCallback(async (dest: string) => {
     localStorage.setItem('sb_safety_review', JSON.stringify(safetyData))
     setGenerating(true)
     try {
-      // If plan is already generated, this resolves instantly
-      await planPromiseRef.current
+      await Promise.all([planPromiseRef.current, safetyPromiseRef.current])
     } finally {
       router.replace(dest)
     }
@@ -211,6 +233,15 @@ export default function SafetyPage() {
 
   const handleContinue = () => generateAndContinue('/coach-intro')
   const handleSaveAndReturn = () => generateAndContinue('/')
+
+  if (hasRehab && !safetyLoaded) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6" style={{ backgroundColor: '#D5E8F0' }}>
+        <div className="w-10 h-10 rounded-full border-4 border-sb-primary border-t-transparent animate-spin mb-4" />
+        <p className="text-sm font-medium text-sb-primary">Reviewing your intake…</p>
+      </div>
+    )
+  }
 
   if (safetyData.status === 'red') {
     return (
