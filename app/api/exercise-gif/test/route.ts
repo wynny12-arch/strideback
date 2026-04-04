@@ -20,7 +20,7 @@ export async function GET() {
 
     const data = await res.json()
     const first = data?.[0] ?? null
-    const constructedGifUrl = first?.id ? `https://v2.exercisedb.io/image/${first.id}.gif` : null
+    const constructedGifUrl = first?.id ? `https://v2.exercisedb.io/image/${first.id}` : null
     return NextResponse.json({
       status: res.status,
       keyPrefix: apiKey.slice(0, 8) + '...',

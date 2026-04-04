@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     const data = await res.json()
     const id = data?.[0]?.id
     if (!id) return null
-    return `https://v2.exercisedb.io/image/${id}.gif`
+    return `https://v2.exercisedb.io/image/${id}`
   }
 
   try {
