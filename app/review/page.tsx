@@ -179,6 +179,17 @@ export default function ReviewPage() {
       await planPromiseRef.current
       if (nextPlan) {
         localStorage.setItem('sb_plan', JSON.stringify(nextPlan))
+        // If the coach introduced new goals (e.g. offered prevention to a rehab-only user),
+        // sync them back to onboarding so Manage and future regenerations stay consistent
+        if (Array.isArray(nextPlan.runnerGoals)) {
+          const onboarding = getSaved('sb_onboarding', {}) as Record<string, unknown>
+          const existingGoals: string[] = Array.isArray(onboarding.goals) ? onboarding.goals as string[] : []
+          const newGoals = nextPlan.runnerGoals as string[]
+          const goalsExpanded = newGoals.some((g: string) => !existingGoals.includes(g))
+          if (goalsExpanded) {
+            localStorage.setItem('sb_onboarding', JSON.stringify({ ...onboarding, goals: newGoals }))
+          }
+        }
       }
     } finally {
       localStorage.removeItem('sb_completed_days')

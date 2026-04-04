@@ -8,19 +8,23 @@ Each week you review their check-in data and generate the next week's plan. You 
 
 PHASE PROGRESSION RULES:
 The runner has selected goals (e.g. rehab, prevention, optimisation). activePhases tracks which are currently live.
+runnerGoals lists all goals the runner has selected — this CAN expand if you introduce a new goal.
 
-To unlock 'prevention' (add it to activePhases):
+To unlock 'prevention':
 - Average pain during sessions ≤ 3/10 for this week
 - Average next-morning stiffness ≤ 4/10
 - Confidence was "Felt good" or "Easy" on majority of sessions
 - At least 2 sessions completed
+→ Add 'prevention' to activePhases. If prevention was NOT already in runnerGoals, also add it to runnerGoals.
 
-To unlock 'optimisation' (add it to activePhases):
+To unlock 'optimisation':
 - Prevention must already be active
 - Average pain ≤ 2/10
 - Confidence was "Easy" on majority of sessions
+→ Add 'optimisation' to activePhases. If not already in runnerGoals, also add it to runnerGoals.
 
-If conditions are not met, keep activePhases unchanged.
+IMPORTANT: Only introduce ONE new phase per week. If unlocking prevention this week, do not also unlock optimisation.
+If conditions are not met, keep activePhases and runnerGoals unchanged.
 
 LOAD PROGRESSION (for rehab sessions):
 - PROGRESS: pain ≤ 3/10 avg, stiffness ≤ 4/10 avg, confidence mostly good/easy
@@ -129,10 +133,14 @@ export async function POST(req: Request) {
     ? `${raceGoalObj.distance}${raceGoalObj.goalTime ? `, goal: ${raceGoalObj.goalTime}` : ''}`
     : 'None'
 
+  const rehabOnly = hasRehab && !hasPrevention && !hasOptimisation
+
   const goalInstructions = [
     hasRehab ? '- REHAB: include 3 strengthSessions targeting the injured area' : '- No rehab: strengthSessions = []',
-    hasPrevention ? '- PREVENTION goal selected' : '',
-    hasOptimisation ? '- OPTIMISATION goal selected' : '',
+    hasPrevention ? '- PREVENTION already selected by runner' : '',
+    hasOptimisation ? '- OPTIMISATION already selected by runner' : '',
+    rehabOnly ? '- Runner originally selected REHAB ONLY — if progression criteria are met, you may introduce prevention by adding it to both runnerGoals and activePhases' : '',
+    !hasRehab && hasPrevention && !hasOptimisation ? '- If prevention well-established and pain ≤ 2/10, you may introduce optimisation' : '',
   ].filter(Boolean).join('\n')
 
   const prompt = `Review this runner's week and generate their next plan. Decide whether to advance their journey.
@@ -165,10 +173,10 @@ If a new phase is unlocked, set phaseUnlocked to that phase name and write a pha
 Return JSON with EXACTLY this structure:
 {
   "runnerTier": ${JSON.stringify(previousPlan?.runnerTier ?? 'intermediate')},
-  "runnerGoals": ${JSON.stringify(allGoals)},
+  "runnerGoals": ["rehab"] or expanded array if a new goal is being introduced this week,
   "activePhases": ["rehab"] or expanded array if criteria met,
   "phaseUnlocked": null or "prevention" or "optimisation",
-  "phaseUnlockedMessage": null or "1-2 sentence message to the runner celebrating the phase unlock and explaining what's new",
+  "phaseUnlockedMessage": null or "1-2 sentence message celebrating the unlock — if this is a newly offered goal (wasn't originally selected), explain that the coach is introducing it now based on their progress",
   "checkinFrequencyDays": ${previousPlan?.checkinFrequencyDays ?? 7},
   "phase": "Phase name — e.g. Progressive Loading — Week 2",
   "planGoal": "1 sentence goal for this week",
