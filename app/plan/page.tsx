@@ -102,6 +102,35 @@ const GOAL_PHASES: {
 
 const DISCLAIMER = 'StrideBack provides structured guidance and educational support for self-managed rehabilitation. It is not a substitute for professional medical diagnosis or treatment.'
 
+// Extract the exercise name from a text string like "Bulgarian split squats 3 × 8 reps — reason"
+function extractExerciseName(item: string): string {
+  return item.replace(/\s+\d.*/, '').replace(/\s*[—–].*/, '').trim()
+}
+
+function TextExerciseItem({ item, index, accentColor }: { item: string; index: number; accentColor: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const name = extractExerciseName(item)
+  return (
+    <li className="bg-gray-50 rounded-xl overflow-hidden">
+      <button
+        type="button"
+        style={{ touchAction: 'manipulation' }}
+        onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-start gap-2 px-3 py-2.5 text-left"
+      >
+        <span className={`font-bold shrink-0 text-sm ${accentColor}`}>{index + 1}.</span>
+        <span className="text-sm text-[#555] leading-snug flex-1">{item}</span>
+        {expanded ? <ChevronUp className="w-3.5 h-3.5 text-[#999] shrink-0 mt-0.5" /> : <ChevronDown className="w-3.5 h-3.5 text-[#999] shrink-0 mt-0.5" />}
+      </button>
+      {expanded && (
+        <div className="px-3 pb-3">
+          <ExerciseGif name={name} show={expanded} />
+        </div>
+      )}
+    </li>
+  )
+}
+
 export default function PlanPage() {
   const router = useRouter()
   useRequireOnboarding()
@@ -492,10 +521,7 @@ export default function PlanPage() {
                     {preventionExpanded && (
                       <ul className="mt-3 space-y-2">
                         {plan.preventionWork.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-[#555] leading-snug bg-gray-50 rounded-xl px-3 py-2.5">
-                            <span className="text-sb-success font-bold shrink-0">{i + 1}.</span>
-                            <span>{item}</span>
-                          </li>
+                          <TextExerciseItem key={i} item={item} index={i} accentColor="text-sb-success" />
                         ))}
                       </ul>
                     )}
@@ -532,10 +558,7 @@ export default function PlanPage() {
                     {optimisationExpanded && (
                       <ul className="mt-3 space-y-2">
                         {plan.optimisationWork.map((item, i) => (
-                          <li key={i} className="flex items-start gap-2 text-sm text-[#555] leading-snug bg-gray-50 rounded-xl px-3 py-2.5">
-                            <span className="text-sb-primary-mid font-bold shrink-0">{i + 1}.</span>
-                            <span>{item}</span>
-                          </li>
+                          <TextExerciseItem key={i} item={item} index={i} accentColor="text-sb-primary-mid" />
                         ))}
                       </ul>
                     )}
