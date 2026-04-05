@@ -119,6 +119,7 @@ Return a JSON object with EXACTLY this structure (all fields required):
   "checkinFrequencyDays": 7,
   "phase": "Phase name e.g. Load Management — Week 1",
   "planGoal": "1 sentence describing this week's goal",
+  "scheduleLabel": "e.g. Every other day",
   "weeklySchedule": "e.g. 3 sessions · Day 1, Day 3, Day 5 · ~25 min each",
   "aiConfidence": "high" | "moderate" | "low",
   "runningAllowance": {
@@ -159,7 +160,8 @@ If no rehab goal: strengthSessions should be [].
 If prevention goal: preventionWork must have 4–6 items. Otherwise set to [].
 If optimisation goal: optimisationWork must have 4–6 items. Otherwise set to [].
 
-weeklySchedule: a single concise line showing frequency, timing, and approximate duration. Examples:
+scheduleLabel: the core cadence in 2–4 words, shown prominently to the user. Examples: "Every other day", "Daily", "3× per week", "Twice a week". Pick the most accurate label for the plan.
+weeklySchedule: a single concise line showing session count, timing, and approximate duration. Examples:
 - Rehab: "3 sessions · Day 1, Day 3, Day 5 · ~20–25 min each"
 - Prevention only: "Daily · 15–20 min · prehab & stability"
 - Optimisation only: "3–4 sessions · every other day · ~25–30 min each"

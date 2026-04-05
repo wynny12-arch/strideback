@@ -169,6 +169,7 @@ export interface RehabPlan {
   educationNotes: string[];
   progressionRules: string[];
   stopOrEscalateRules: string[];
+  scheduleLabel?: string;            // e.g. "Every other day" or "Daily" — shown large in hero
   weeklySchedule?: string;           // e.g. "3 sessions · Day 1, 3, 5 · ~25 min each"
   reviewInDays: number;
   checkinFrequencyDays?: number;     // how often to check in, based on tier

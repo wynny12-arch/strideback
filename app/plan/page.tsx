@@ -168,28 +168,25 @@ export default function PlanPage() {
     <div className="min-h-screen bg-white pb-44">
 
       {/* ── Tier Hero ─────────────────────────────────────────────────────── */}
-      <div className="bg-sb-primary px-6 pt-10 pb-5">
+      <div className="bg-sb-primary px-6 pt-10 pb-6">
         <div className="w-full max-w-[480px] mx-auto">
-          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">Your plan</p>
-          <h1 className="text-lg font-bold text-white mb-0.5">
-            {tierConfig ? tierConfig.label : plan.phase}
-          </h1>
-          <p className="text-white/70 text-sm font-medium mb-3">{plan.phase}</p>
-          <p className="text-white/60 text-xs leading-relaxed mb-3">{plan.planGoal}</p>
-          {plan.weeklySchedule && (
-            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-white/60 shrink-0" />
-              <p className="text-white/80 text-xs font-medium">{plan.weeklySchedule}</p>
-            </div>
-          )}
-          {!plan.weeklySchedule && plan.strengthSessions.length > 0 && (
-            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-white/60 shrink-0" />
-              <p className="text-white/80 text-xs font-medium">
-                {plan.strengthSessions.length} sessions · {plan.strengthSessions.map(s => s.day).join(', ')}
-              </p>
-            </div>
-          )}
+          <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-1">
+            {tierConfig ? tierConfig.label : 'Your plan'}
+          </p>
+
+          {/* Schedule — the dominant element */}
+          <p className="text-4xl font-black text-white leading-tight mt-1">
+            {plan.scheduleLabel ?? (plan.strengthSessions.length >= 5 ? 'Daily' : plan.strengthSessions.length >= 3 ? 'Every other day' : plan.strengthSessions.length >= 2 ? 'Twice a week' : '3× per week')}
+          </p>
+          <p className="text-white/60 text-sm mt-1 mb-4">
+            {plan.weeklySchedule ?? (plan.strengthSessions.length > 0 ? `${plan.strengthSessions.length} sessions · ${plan.strengthSessions.map(s => s.day).join(', ')}` : '')}
+          </p>
+
+          {/* Phase + goal — secondary info */}
+          <div className="border-t border-white/10 pt-3">
+            <p className="text-white/80 text-sm font-semibold">{plan.phase}</p>
+            <p className="text-white/50 text-xs mt-0.5 leading-relaxed">{plan.planGoal}</p>
+          </div>
         </div>
       </div>
 
