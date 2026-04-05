@@ -115,12 +115,10 @@ export default function ActivityPage() {
       imageDataUrl: null, // don't store base64 image — would exceed localStorage quota
     }
     const updated = [entry, ...log]
-    setLog(updated)
     saveLog(updated)
-    setForm(emptyForm)
-    setImageDataUrl(null)
-    setParsedFromImage(false)
-    setShowForm(false)
+    // Flag for coach page to auto-send a recap message
+    localStorage.setItem('sb_just_logged_activity', JSON.stringify(entry))
+    router.push('/coach?from=activity')
   }
 
   const handleDelete = (id: string) => {

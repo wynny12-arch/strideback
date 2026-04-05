@@ -1,11 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRequireOnboarding } from '@/hooks/use-require-onboarding'
 import { BottomNav } from '@/components/bottom-nav'
 import { Button } from '@/components/ui/button'
-import { Send, Loader2 } from 'lucide-react'
-import type { CoachMessage } from '@/types'
+import { Send, Loader2, ChevronLeft } from 'lucide-react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import type { CoachMessage, ActivityLogEntry } from '@/types'
 
 function getContext() {
   try {
@@ -37,13 +38,40 @@ function saveHistory(messages: CoachMessage[]) {
 
 const WELCOME = "Hey! I'm your StrideBack coach. Ask me anything about your plan, your training, or how you're feeling. I'm here to help."
 
+function buildActivityMessage(entry: ActivityLogEntry): string {
+  const typeLabel = entry.type.charAt(0).toUpperCase() + entry.type.slice(1)
+  const parts = [`I just logged a ${typeLabel} on ${entry.date}.`]
+  const stats: string[] = []
+  if (entry.distanceValue) stats.push(`${entry.distanceValue}${entry.distanceUnit ?? ''}`)
+  if (entry.durationMins) stats.push(`${entry.durationMins} mins`)
+  if (entry.pace) stats.push(`pace ${entry.pace}`)
+  if (entry.avgHeartRate) stats.push(`HR ${entry.avgHeartRate}bpm`)
+  if (stats.length) parts.push(stats.join(', ') + '.')
+  parts.push(`Felt ${entry.feel}/10.`)
+  if (entry.notes) parts.push(`Notes: ${entry.notes}`)
+  parts.push('What do you think of this session and how will you use it in my plan?')
+  return parts.join(' ')
+}
+
 export default function CoachPage() {
+  return (
+    <Suspense>
+      <CoachContent />
+    </Suspense>
+  )
+}
+
+function CoachContent() {
   useRequireOnboarding()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const fromActivity = searchParams.get('from') === 'activity'
   const [messages, setMessages] = useState<CoachMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const autoSentRef = useRef(false)
 
   useEffect(() => {
     const history = getHistory()
@@ -54,9 +82,24 @@ export default function CoachPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  const send = async () => {
-    const text = input.trim()
+  // Auto-send activity recap when arriving from activity log
+  useEffect(() => {
+    if (!fromActivity || autoSentRef.current) return
+    const raw = localStorage.getItem('sb_just_logged_activity')
+    if (!raw) return
+    autoSentRef.current = true
+    localStorage.removeItem('sb_just_logged_activity')
+    try {
+      const entry = JSON.parse(raw) as ActivityLogEntry
+      const message = buildActivityMessage(entry)
+      sendMessage(message)
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromActivity])
+
+  const sendMessage = async (text: string, currentMessages?: CoachMessage[]) => {
     if (!text || loading) return
+    const base = currentMessages ?? messages
 
     const userMsg: CoachMessage = {
       id: crypto.randomUUID(),
@@ -65,13 +108,12 @@ export default function CoachPage() {
       timestamp: new Date().toISOString(),
     }
 
-    const updatedMessages = [...messages, userMsg]
+    const updatedMessages = [...base, userMsg]
     setMessages(updatedMessages)
     setInput('')
     setLoading(true)
 
-    // Build history for API (exclude the current message, it's passed separately)
-    const history = messages.map(m => ({
+    const history = base.map(m => ({
       role: m.role === 'coach' ? 'assistant' as const : 'user' as const,
       content: m.content,
     }))
@@ -80,11 +122,7 @@ export default function CoachPage() {
       const res = await fetch('/api/coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: text,
-          history,
-          context: getContext(),
-        }),
+        body: JSON.stringify({ message: text, history, context: getContext() }),
       })
 
       const data = await res.json()
@@ -104,7 +142,7 @@ export default function CoachPage() {
       const errorMsg: CoachMessage = {
         id: crypto.randomUUID(),
         role: 'coach',
-        content: 'Sorry, I couldn\'t connect. Check your connection and try again.',
+        content: "Sorry, I couldn't connect. Check your connection and try again.",
         timestamp: new Date().toISOString(),
       }
       const finalMessages = [...updatedMessages, errorMsg]
@@ -114,6 +152,8 @@ export default function CoachPage() {
       setLoading(false)
     }
   }
+
+  const send = () => sendMessage(input.trim())
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -128,7 +168,19 @@ export default function CoachPage() {
       <div className="bg-sb-primary px-6 pt-12 pb-6 shrink-0">
         <div className="w-full max-w-[480px] mx-auto">
           <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-1">AI Coach</p>
-          <h1 className="text-xl font-bold text-white">Ask your coach</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold text-white">Ask your coach</h1>
+            {fromActivity && (
+              <button
+                type="button"
+                onClick={() => router.push('/plan')}
+                className="flex items-center gap-1 text-white/70 text-sm font-medium"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Back to plan
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
