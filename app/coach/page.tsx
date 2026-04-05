@@ -104,7 +104,8 @@ function CoachContent() {
     try {
       const entry = JSON.parse(raw) as ActivityLogEntry
       const message = buildActivityMessage(entry)
-      sendMessage(message)
+      // Pass history directly — messages state may not be populated yet
+      sendMessage(message, getHistory())
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromActivity])
@@ -118,7 +119,8 @@ function CoachContent() {
     localStorage.removeItem('sb_just_completed_session')
     try {
       const payload = JSON.parse(raw) as { sessionType: string; effort: number; effortLabel: string; notes: string | null }
-      sendMessage(buildSessionMessage(payload))
+      // Pass history directly — messages state may not be populated yet
+      sendMessage(buildSessionMessage(payload), getHistory())
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromSession])
