@@ -171,24 +171,24 @@ export default function PlanPage() {
       <div className="bg-sb-primary px-6 pt-10 pb-5">
         <div className="w-full max-w-[480px] mx-auto">
           <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-2">Your plan</p>
-          {tierConfig ? (
-            <>
-              <h1 className="text-xl font-bold text-white mb-3">{tierConfig.label}</h1>
-              <div className="space-y-1.5">
-                {[
-                  'Complete each session in one block — rest 60–90 sec between sets',
-                  `${tierConfig.checkinDesc} to keep your plan updated`,
-                  'Log each session after completing so your coach can track progress',
-                ].map((tip, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <div className="w-1 h-1 rounded-full bg-white/40 shrink-0 mt-[5px]" />
-                    <p className="text-white/70 text-xs leading-snug">{tip}</p>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <h1 className="text-xl font-bold text-white">{plan.phase}</h1>
+          <h1 className="text-lg font-bold text-white mb-0.5">
+            {tierConfig ? tierConfig.label : plan.phase}
+          </h1>
+          <p className="text-white/70 text-sm font-medium mb-3">{plan.phase}</p>
+          <p className="text-white/60 text-xs leading-relaxed mb-3">{plan.planGoal}</p>
+          {plan.weeklySchedule && (
+            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-white/60 shrink-0" />
+              <p className="text-white/80 text-xs font-medium">{plan.weeklySchedule}</p>
+            </div>
+          )}
+          {!plan.weeklySchedule && plan.strengthSessions.length > 0 && (
+            <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-white/60 shrink-0" />
+              <p className="text-white/80 text-xs font-medium">
+                {plan.strengthSessions.length} sessions · {plan.strengthSessions.map(s => s.day).join(', ')}
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -234,20 +234,6 @@ export default function PlanPage() {
       </div>
 
       <div className="w-full max-w-[480px] mx-auto px-6">
-        {/* Current phase */}
-        {tierConfig && (
-          <div className="py-5 border-b border-gray-100">
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#555]/50 mb-1">Current phase</p>
-            <p className="text-base font-bold text-sb-primary">{plan.phase}</p>
-            <p className="text-sm text-[#555] leading-relaxed mt-1">{plan.planGoal}</p>
-          </div>
-        )}
-
-        {!tierConfig && (
-          <div className="py-6 border-b border-gray-100">
-            <p className="text-sm text-[#555] leading-relaxed">{plan.planGoal}</p>
-          </div>
-        )}
 
         {/* Running allowance */}
         <div className="py-5 border-b border-gray-100">

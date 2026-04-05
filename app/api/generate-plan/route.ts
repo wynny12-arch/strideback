@@ -119,6 +119,7 @@ Return a JSON object with EXACTLY this structure (all fields required):
   "checkinFrequencyDays": 7,
   "phase": "Phase name e.g. Load Management — Week 1",
   "planGoal": "1 sentence describing this week's goal",
+  "weeklySchedule": "e.g. 3 sessions · Day 1, Day 3, Day 5 · ~25 min each",
   "aiConfidence": "high" | "moderate" | "low",
   "runningAllowance": {
     "allowed": true | false,
@@ -156,7 +157,14 @@ Return a JSON object with EXACTLY this structure (all fields required):
 If rehab goal: include 3 strengthSessions (Day 1, Day 3, Day 5) with 3 exercises each targeting the injured area.
 If no rehab goal: strengthSessions should be [].
 If prevention goal: preventionWork must have 4–6 items. Otherwise set to [].
-If optimisation goal: optimisationWork must have 4–6 items. Otherwise set to [].`
+If optimisation goal: optimisationWork must have 4–6 items. Otherwise set to [].
+
+weeklySchedule: a single concise line showing frequency, timing, and approximate duration. Examples:
+- Rehab: "3 sessions · Day 1, Day 3, Day 5 · ~20–25 min each"
+- Prevention only: "Daily · 15–20 min · prehab & stability"
+- Optimisation only: "3–4 sessions · every other day · ~25–30 min each"
+- Prevention + optimisation: "3–4 sessions · alternate days · ~30–35 min each"
+- Rehab + prevention: "3 sessions · Day 1, Day 3, Day 5 · ~25–30 min each"`
 }
 
 export async function POST(req: Request) {
