@@ -32,6 +32,7 @@ Extract the following activity data from the screenshot. Return ONLY a JSON obje
 
 {
   "activityType": "run" | "cycle" | "swim" | "gym" | "walk" | "other",
+  "date": "YYYY-MM-DD" or null,
   "durationMins": number or null,
   "distanceValue": "string e.g. 5.2" or null,
   "distanceUnit": "miles" | "km" | null,
@@ -41,6 +42,7 @@ Extract the following activity data from the screenshot. Return ONLY a JSON obje
 
 Rules:
 - activityType: infer from context clues (running icon, pace format, swim laps, etc.)
+- date: extract the activity date shown on screen. Format as YYYY-MM-DD. If the year is not shown, assume the current year. If no date is visible, return null.
 - durationMins: convert to minutes if shown as h:mm or mm:ss format
 - distanceValue: the numeric value as a string, no units
 - distanceUnit: look for "mi", "miles", "km", "k" — if ambiguous, use "km"

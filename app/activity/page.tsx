@@ -84,6 +84,7 @@ export default function ActivityPage() {
           setForm(f => ({
             ...f,
             type: data.activityType ?? f.type,
+            date: data.date ?? f.date,
             durationMins: data.durationMins != null ? String(data.durationMins) : f.durationMins,
             distanceValue: data.distanceValue ?? f.distanceValue,
             distanceUnit: data.distanceUnit ?? f.distanceUnit,
@@ -111,7 +112,7 @@ export default function ActivityPage() {
       feel: form.feel,
       notes: form.notes || null,
       source: imageDataUrl ? 'upload' : 'manual',
-      imageDataUrl,
+      imageDataUrl: null, // don't store base64 image — would exceed localStorage quota
     }
     const updated = [entry, ...log]
     setLog(updated)
