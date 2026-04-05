@@ -121,6 +121,7 @@ Return a JSON object with EXACTLY this structure (all fields required):
   "planGoal": "1 sentence describing this week's goal",
   "scheduleLabel": "e.g. Every other day",
   "weeklySchedule": "e.g. 3 sessions · Day 1, Day 3, Day 5 · ~25 min each",
+  "sessionStructure": "e.g. Prevention first, then performance · complete all sets before moving on",
   "aiConfidence": "high" | "moderate" | "low",
   "runningAllowance": {
     "allowed": true | false,
@@ -161,6 +162,13 @@ If prevention goal: preventionWork must have 4–6 items. Otherwise set to [].
 If optimisation goal: optimisationWork must have 4–6 items. Otherwise set to [].
 
 scheduleLabel: the core cadence in 2–4 words, shown prominently to the user. Examples: "Every other day", "Daily", "3× per week", "Twice a week". Pick the most accurate label for the plan.
+sessionStructure: one line explaining (1) the order to do exercise groups within a session, and (2) the set execution rule. Examples:
+- Rehab only: "Work through each exercise in order · complete all sets before moving on"
+- Prevention only: "Work through each exercise in order · complete all sets before moving on"
+- Optimisation only: "Work through each exercise in order · complete all sets before moving on"
+- Prevention + optimisation: "Prevention exercises first, then performance · complete all sets of each before moving on"
+- Rehab + prevention: "Rehab exercises first, then prevention · complete all sets of each before moving on"
+- All three: "Rehab first, then prevention, then performance · complete all sets of each before moving on"
 weeklySchedule: a single concise line showing session count, timing, and approximate duration. Examples:
 - Rehab: "3 sessions · Day 1, Day 3, Day 5 · ~20–25 min each"
 - Prevention only: "Daily · 15–20 min · prehab & stability"

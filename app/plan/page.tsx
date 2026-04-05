@@ -178,12 +178,19 @@ export default function PlanPage() {
           <p className="text-4xl font-black text-white leading-tight mt-1">
             {plan.scheduleLabel ?? (plan.strengthSessions.length >= 5 ? 'Daily' : plan.strengthSessions.length >= 3 ? 'Every other day' : plan.strengthSessions.length >= 2 ? 'Twice a week' : '3× per week')}
           </p>
-          <p className="text-white/60 text-sm mt-1 mb-4">
+          <p className="text-white/60 text-sm mt-1">
             {plan.weeklySchedule ?? (plan.strengthSessions.length > 0 ? `${plan.strengthSessions.length} sessions · ${plan.strengthSessions.map(s => s.day).join(', ')}` : '')}
           </p>
 
+          {/* Session structure — how to execute each session */}
+          {plan.sessionStructure && (
+            <div className="mt-3 bg-white/10 rounded-xl px-3 py-2.5">
+              <p className="text-white/90 text-xs font-medium leading-relaxed">{plan.sessionStructure}</p>
+            </div>
+          )}
+
           {/* Phase + goal — secondary info */}
-          <div className="border-t border-white/10 pt-3">
+          <div className="border-t border-white/10 mt-4 pt-3">
             <p className="text-white/80 text-sm font-semibold">{plan.phase}</p>
             <p className="text-white/50 text-xs mt-0.5 leading-relaxed">{plan.planGoal}</p>
           </div>
