@@ -38,6 +38,17 @@ function saveHistory(messages: CoachMessage[]) {
 
 const WELCOME = "Hey! I'm your StrideBack coach. Ask me anything about your plan, your training, or how you're feeling. I'm here to help."
 
+function buildSessionMessage(payload: { sessionType: string; effort: number; effortLabel: string; notes: string | null }): string {
+  const typeLabel = payload.sessionType === 'prevention' ? 'injury prevention'
+    : payload.sessionType === 'optimisation' ? 'performance'
+    : payload.sessionType === 'rehab' ? 'rehab'
+    : 'today\'s'
+  const parts = [`I just completed my ${typeLabel} exercises. Effort level: ${payload.effort}/5 (${payload.effortLabel}).`]
+  if (payload.notes) parts.push(`Notes: ${payload.notes}`)
+  parts.push('Can you acknowledge this, give me a thumbs up, and let me know how this fits into my plan?')
+  return parts.join(' ')
+}
+
 function buildActivityMessage(entry: ActivityLogEntry): string {
   const typeLabel = entry.type.charAt(0).toUpperCase() + entry.type.slice(1)
   const parts = [`I just logged a ${typeLabel} on ${entry.date}.`]
@@ -66,6 +77,7 @@ function CoachContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const fromActivity = searchParams.get('from') === 'activity'
+  const fromSession = searchParams.get('from') === 'session'
   const [messages, setMessages] = useState<CoachMessage[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -96,6 +108,20 @@ function CoachContent() {
     } catch { /* ignore */ }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fromActivity])
+
+  // Auto-send session completion when arriving from quick check-in
+  useEffect(() => {
+    if (!fromSession || autoSentRef.current) return
+    const raw = localStorage.getItem('sb_just_completed_session')
+    if (!raw) return
+    autoSentRef.current = true
+    localStorage.removeItem('sb_just_completed_session')
+    try {
+      const payload = JSON.parse(raw) as { sessionType: string; effort: number; effortLabel: string; notes: string | null }
+      sendMessage(buildSessionMessage(payload))
+    } catch { /* ignore */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fromSession])
 
   const sendMessage = async (text: string, currentMessages?: CoachMessage[]) => {
     if (!text || loading) return
@@ -170,7 +196,7 @@ function CoachContent() {
           <p className="text-white/60 text-xs font-semibold uppercase tracking-widest mb-1">AI Coach</p>
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-white">Ask your coach</h1>
-            {fromActivity && (
+            {(fromActivity || fromSession) && (
               <button
                 type="button"
                 onClick={() => router.push('/plan')}

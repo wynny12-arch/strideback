@@ -144,6 +144,8 @@ export default function PlanPage() {
   const [completedDays, setCompletedDays] = useState<number[]>([])
   const [dailyDoneToday, setDailyDoneToday] = useState(false)
   const [weeklyDoneThisWeek, setWeeklyDoneThisWeek] = useState(false)
+  const [preventionDoneToday, setPreventionDoneToday] = useState(false)
+  const [optimisationDoneToday, setOptimisationDoneToday] = useState(false)
 
   useEffect(() => {
     setPlan(getStoredPlan())
@@ -157,6 +159,8 @@ export default function PlanPage() {
     const history: Record<string, unknown>[] = JSON.parse(localStorage.getItem('sb_checkin_history') ?? '[]')
     setDailyDoneToday(history.some(c => c.type === 'daily' && new Date(c.createdAt as string).toDateString() === today))
     setWeeklyDoneThisWeek(history.some(c => c.type === 'weekly' && new Date(c.createdAt as string).getTime() > weekAgo))
+    setPreventionDoneToday(history.some(c => c.type === 'quick' && (c as Record<string, unknown>).sessionType === 'prevention' && new Date(c.createdAt as string).toDateString() === today))
+    setOptimisationDoneToday(history.some(c => c.type === 'quick' && (c as Record<string, unknown>).sessionType === 'optimisation' && new Date(c.createdAt as string).toDateString() === today))
   }, [])
 
   const goals = plan.runnerGoals ?? []
@@ -511,14 +515,31 @@ export default function PlanPage() {
                     </div>
                     <p className="text-xs text-sb-success font-semibold mb-1">Starting immediately</p>
                     <p className="text-sm text-[#555] leading-relaxed mb-3">Prehab and stability work to keep you resilient and injury-free.</p>
-                    <button
-                      type="button"
-                      onClick={() => setPreventionExpanded(v => !v)}
-                      className="flex items-center gap-1 text-xs font-semibold text-sb-primary-mid"
-                    >
-                      {preventionExpanded ? 'Hide exercises' : 'View exercises'}
-                      {preventionExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    </button>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setPreventionExpanded(v => !v)}
+                        className="flex items-center gap-1 text-xs font-semibold text-sb-primary-mid"
+                      >
+                        {preventionExpanded ? 'Hide exercises' : 'View exercises'}
+                        {preventionExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      </button>
+                      <span className="text-gray-300">·</span>
+                      {preventionDoneToday ? (
+                        <span className="flex items-center gap-1 text-xs font-semibold text-sb-success">
+                          <CheckCircle2 className="w-3 h-3" /> Done today
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => router.push('/checkin-quick?type=prevention')}
+                          onTouchEnd={(e) => { e.preventDefault(); router.push('/checkin-quick?type=prevention') }}
+                          className="flex items-center gap-1 text-xs font-semibold text-sb-success"
+                        >
+                          Log today&apos;s exercises <ChevronDown className="w-3 h-3 -rotate-90" />
+                        </button>
+                      )}
+                    </div>
                     {preventionExpanded && (
                       <ul className="mt-3 space-y-2">
                         {plan.preventionWork.map((item, i) => (
@@ -548,14 +569,31 @@ export default function PlanPage() {
                       {preventionActive ? 'Running alongside prevention' : 'Starting immediately'}
                     </p>
                     <p className="text-sm text-[#555] leading-relaxed mb-3">Strength and power work to improve your running economy and speed.</p>
-                    <button
-                      type="button"
-                      onClick={() => setOptimisationExpanded(v => !v)}
-                      className="flex items-center gap-1 text-xs font-semibold text-sb-primary-mid"
-                    >
-                      {optimisationExpanded ? 'Hide exercises' : 'View exercises'}
-                      {optimisationExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                    </button>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setOptimisationExpanded(v => !v)}
+                        className="flex items-center gap-1 text-xs font-semibold text-sb-primary-mid"
+                      >
+                        {optimisationExpanded ? 'Hide exercises' : 'View exercises'}
+                        {optimisationExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                      </button>
+                      <span className="text-gray-300">·</span>
+                      {optimisationDoneToday ? (
+                        <span className="flex items-center gap-1 text-xs font-semibold text-sb-success">
+                          <CheckCircle2 className="w-3 h-3" /> Done today
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => router.push('/checkin-quick?type=optimisation')}
+                          onTouchEnd={(e) => { e.preventDefault(); router.push('/checkin-quick?type=optimisation') }}
+                          className="flex items-center gap-1 text-xs font-semibold text-sb-primary-mid"
+                        >
+                          Log today&apos;s exercises <ChevronDown className="w-3 h-3 -rotate-90" />
+                        </button>
+                      )}
+                    </div>
                     {optimisationExpanded && (
                       <ul className="mt-3 space-y-2">
                         {plan.optimisationWork.map((item, i) => (
